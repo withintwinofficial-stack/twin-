@@ -18,6 +18,7 @@ import { BioReminderCard } from "./bio-reminder-card"
 import { TaskList } from "./task-list"
 import { PhaseOverview } from "./phase-overview"
 import { CycleCalendar } from "./cycle-calendar"
+import { FoodsCard } from "./foods-card"
 
 export function Dashboard({ todayISO }: { todayISO: string }) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
@@ -94,6 +95,7 @@ export function Dashboard({ todayISO }: { todayISO: string }) {
                 <CycleCalendar today={today} cycleDay={cycleDay} tasks={tasks} onCycleDayChange={setCycleDay} />
               </div>
             </div>
+            <FoodsCard cycleDay={cycleDay} phase={phase} />
           </section>
         </div>
 
