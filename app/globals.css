@@ -97,6 +97,32 @@
   --animate-twin-breathe: twin-breathe 6s ease-in-out infinite;
   --animate-twin-drift: twin-drift 9s ease-in-out infinite;
   --animate-twin-steam: twin-steam 3.2s ease-in-out infinite;
+  --animate-twin-hop: twin-hop 0.9s cubic-bezier(0.3, 0.7, 0.4, 1) 2;
+  --animate-twin-wiggle: twin-wiggle 0.8s ease-in-out 2;
+  --animate-twin-burst: twin-burst 1.4s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+  --animate-twin-toast: twin-toast 2.2s ease-out forwards;
+
+  @keyframes twin-hop {
+    0%, 100% { transform: translateY(0) scale(1, 1); }
+    18% { transform: translateY(4px) scale(1.04, 0.95); }
+    45% { transform: translateY(-34px) scale(0.97, 1.04); }
+    70% { transform: translateY(0) scale(1.03, 0.97); }
+  }
+  @keyframes twin-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-3deg) translateY(-3px); }
+    75% { transform: rotate(3deg) translateY(-3px); }
+  }
+  @keyframes twin-burst {
+    0% { transform: translate(0, 0) rotate(0deg) scale(0.3); opacity: 0; }
+    12% { opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
+  }
+  @keyframes twin-toast {
+    0% { transform: translateY(8px); opacity: 0; }
+    15%, 75% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-6px); opacity: 0; }
+  }
 
   @keyframes twin-float {
     0%, 100% { transform: translateY(0) rotate(-1.2deg); }

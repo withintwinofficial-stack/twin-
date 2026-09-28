@@ -20,8 +20,8 @@ function Swatch({ color, name, selected, onClick }: { color: string; name: strin
 
 export function AvatarCustomizer({ value, onChange }: { value: AvatarConfig; onChange: (v: AvatarConfig) => void }) {
   return (
-    <section aria-labelledby="customize-heading" className="rounded-2xl border border-border bg-card p-6">
-      <div className="flex items-baseline justify-between">
+    <section aria-labelledby="customize-heading">
+      <div className="flex flex-col gap-1">
         <h2 id="customize-heading" className="font-serif text-xl">
           Style your Twin
         </h2>

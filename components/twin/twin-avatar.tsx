@@ -14,7 +14,12 @@ function HairBack({ style, color }: { style: HairStyle; color: string }) {
     case "bob":
       return <path d="M-34 -4 Q-37 -40 0 -41 Q37 -40 34 -4 L35 22 Q22 30 14 20 L-14 20 Q-22 30 -35 22 Z" fill={color} />
     case "long":
-      return <path d="M-34 -6 Q-38 -41 0 -42 Q38 -41 34 -6 L39 62 Q20 70 0 62 Q-20 70 -39 62 Z" fill={color} />
+      return (
+        <path
+          d="M-34 -6 Q-38 -41 0 -42 Q38 -41 34 -6 Q37 30 38 58 Q32 66 24 60 Q22 38 20 20 L-20 20 Q-22 38 -24 60 Q-32 66 -38 58 Q-37 30 -34 -6 Z"
+          fill={color}
+        />
+      )
     case "bun":
       return <circle cx={0} cy={-38} r={14} fill={color} />
     case "curly":

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
   createSeedTasks,
   DEFAULT_AVATAR,
@@ -13,8 +13,7 @@ import {
 } from "@/lib/twin"
 import { DashboardHeader } from "./dashboard-header"
 import { QuoteCard } from "./quote-card"
-import { TwinStage } from "./twin-stage"
-import { AvatarCustomizer } from "./avatar-customizer"
+import { TwinStage, type Celebration } from "./twin-stage"
 import { BioReminderCard } from "./bio-reminder-card"
 import { TaskList } from "./task-list"
 import { PhaseOverview } from "./phase-overview"
@@ -38,6 +37,18 @@ export function Dashboard({ todayISO }: { todayISO: string }) {
       { id: crypto.randomUUID(), title, dueDate, effort, done: false, plannedToday: false },
     ])
 
+  const [celebration, setCelebration] = useState<Celebration | null>(null)
+  const celebrationTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const toggleTask = (id: string, done: boolean) => {
+    updateTask(id, { done })
+    if (!done) return
+    const task = tasks.find((t) => t.id === id)
+    if (celebrationTimer.current) clearTimeout(celebrationTimer.current)
+    setCelebration({ id: Date.now(), title: task?.title ?? "Task" })
+    celebrationTimer.current = setTimeout(() => setCelebration(null), 2200)
+  }
+
   const removeTask = (id: string) => setTasks((prev) => prev.filter((t) => t.id !== id))
 
   const doneCount = tasks.filter((t) => t.done).length
@@ -51,8 +62,15 @@ export function Dashboard({ todayISO }: { todayISO: string }) {
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
           <section aria-label="Your Twin" className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-8 lg:col-span-4 lg:self-start">
-            <TwinStage avatar={avatar} phase={phase} doneCount={doneCount} totalCount={tasks.length} cycleDay={cycleDay} />
-            <AvatarCustomizer value={avatar} onChange={setAvatar} />
+            <TwinStage
+              avatar={avatar}
+              phase={phase}
+              doneCount={doneCount}
+              totalCount={tasks.length}
+              cycleDay={cycleDay}
+              celebration={celebration}
+              onAvatarChange={setAvatar}
+            />
           </section>
 
           <section aria-label="Planner" className="flex min-w-0 flex-col gap-6 lg:col-span-8">
@@ -67,7 +85,7 @@ export function Dashboard({ todayISO }: { todayISO: string }) {
                 tasks={tasks}
                 today={today}
                 cycleDay={cycleDay}
-                onToggle={(id, done) => updateTask(id, { done })}
+                onToggle={toggleTask}
                 onAdd={addTask}
                 onRemove={removeTask}
               />

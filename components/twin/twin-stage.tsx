@@ -1,6 +1,15 @@
 import { Moon, Sparkles } from "lucide-react"
 import { energyScore, OUTFITS, type AvatarConfig, type Phase } from "@/lib/twin"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TwinAvatar } from "./twin-avatar"
+import { AvatarCustomizer } from "./avatar-customizer"
+import { CelebrationBurst } from "./celebration-burst"
+
+export interface Celebration {
+  id: number
+  title: string
+}
 
 const PARTICLES = [
   { left: "14%", top: "22%", size: 6, delay: "0s" },
@@ -16,9 +25,11 @@ interface TwinStageProps {
   cycleDay: number
   doneCount: number
   totalCount: number
+  celebration: Celebration | null
+  onAvatarChange: (v: AvatarConfig) => void
 }
 
-export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount }: TwinStageProps) {
+export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, onAvatarChange }: TwinStageProps) {
   const outfit = OUTFITS[phase.id]
   const resting = outfit.kind === "lounge"
   const energy = energyScore(cycleDay)
@@ -53,28 +64,65 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount }: Tw
             ))
           : null}
 
-        <div key={outfit.kind + phase.id} className="absolute inset-0 animate-in fade-in zoom-in-95 duration-700">
-          {resting ? (
-            <TwinAvatar config={avatar} outfit={outfit} />
-          ) : (
-            <>
-              <div className="absolute inset-x-0 top-0 bottom-6 motion-safe:animate-twin-float">
-                <TwinAvatar config={avatar} outfit={outfit} />
+        {celebration ? (
+          <>
+            <CelebrationBurst key={`burst-${celebration.id}`} colors={[phase.color, "#2a2622", "#c9a27e", "#e8dccb"]} />
+            <p
+              key={`toast-${celebration.id}`}
+              className="absolute inset-x-0 top-0 z-20 mx-auto w-fit max-w-[90%] truncate rounded-full border border-border bg-card/90 px-4 py-1.5 text-center text-xs shadow-sm backdrop-blur-sm motion-safe:animate-twin-toast"
+            >
+              <span className="font-serif italic">Done:</span> {celebration.title}
+            </p>
+          </>
+        ) : null}
+
+        <Popover>
+          <PopoverTrigger
+            aria-label="Customize your Twin"
+            className="group absolute inset-0 cursor-pointer rounded-[2rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+              <div key={outfit.kind + phase.id} className="absolute inset-0 animate-in fade-in zoom-in-95 duration-700">
+                <div
+                  key={celebration?.id ?? "idle"}
+                  className={cn(
+                    "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.02]",
+                    celebration && (resting ? "motion-safe:animate-twin-wiggle" : "motion-safe:animate-twin-hop"),
+                  )}
+                  style={{ transformOrigin: "50% 90%" }}
+                >
+                  {resting ? (
+                    <TwinAvatar config={avatar} outfit={outfit} />
+                  ) : (
+                    <>
+                      <div className="absolute inset-x-0 top-0 bottom-6 motion-safe:animate-twin-float">
+                        <TwinAvatar config={avatar} outfit={outfit} />
+                      </div>
+                      <div
+                        aria-hidden
+                        className="absolute bottom-2 left-1/2 h-3 w-28 -translate-x-1/2 motion-safe:animate-twin-shadow"
+                      >
+                        <div className="h-full w-full rounded-[50%] bg-foreground/15 blur-[3px]" />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div
-                aria-hidden
-                className="absolute bottom-2 left-1/2 h-3 w-28 -translate-x-1/2 motion-safe:animate-twin-shadow"
-              >
-                <div className="h-full w-full rounded-[50%] bg-foreground/15 blur-[3px]" />
-              </div>
-            </>
-          )}
-        </div>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" align="center" sideOffset={-24} className="w-80 rounded-2xl p-6">
+            <AvatarCustomizer value={avatar} onChange={onAvatarChange} />
+          </PopoverContent>
+        </Popover>
       </div>
+
+      <p className="sr-only" aria-live="polite">
+        {celebration ? `Nice work. ${celebration.title} is done.` : ""}
+      </p>
 
       <div className="relative mt-4 text-center">
         <p className="font-serif text-2xl italic text-balance">&ldquo;{outfit.mood}&rdquo;</p>
-        <p className="mt-2 text-xs text-muted-foreground">Wearing: {outfit.label}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Wearing: {outfit.label} <span aria-hidden>&middot;</span> Tap your Twin to restyle
+        </p>
       </div>
 
       <dl className="relative mt-6 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card/70 py-3 text-center backdrop-blur-sm">
