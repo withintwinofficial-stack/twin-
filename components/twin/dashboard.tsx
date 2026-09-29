@@ -157,6 +157,33 @@ export function Dashboard({
 
   const evening = timeMode === "evening"
 
+  const pillarActions = (
+    <PillarActions premium={premium} onBrainFog={openBrainFog} onHyperfocus={() => requirePremium("hyperfocus", () => setHyperfocus(true))} />
+  )
+  const vault = (
+    <DopamineVault
+      tokens={tokens}
+      owned={collection}
+      equipped={avatar.accessory ?? null}
+      premium={premium}
+      onLocked={() => setLockedFeature("vault")}
+      onSpend={(n) => setTokens((t) => t - n)}
+      onEarn={(n) => setTokens((t) => t + n)}
+      onCollect={(id) => onCollectionChange(collection.includes(id) ? collection : [...collection, id])}
+      onEquip={(id) => setAvatar({ ...avatar, accessory: id })}
+    />
+  )
+  const taxShelf = (
+    <TaxShelf
+      today={today}
+      items={taxItems}
+      premium={premium}
+      onAdd={(note) => setTaxItems((prev) => [{ id: crypto.randomUUID(), ...parseTaxNote(note, today) }, ...prev])}
+      onRemove={(id) => setTaxItems((prev) => prev.filter((t) => t.id !== id))}
+      onLocked={() => setLockedFeature("tax")}
+    />
+  )
+
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto max-w-[1400px] px-5 py-6 md:px-10 md:py-10">
@@ -181,32 +208,15 @@ export function Dashboard({
             />
             {!evening ? (
               <>
-                <PillarActions premium={premium} onBrainFog={openBrainFog} onHyperfocus={() => requirePremium("hyperfocus", () => setHyperfocus(true))} />
+                {premium ? pillarActions : null}
                 <SymptomPills logged={symptoms} onToggle={toggleSymptom} />
               </>
             ) : null}
             <TwinWhispers doneCount={doneCount} evening={evening} loggedSymptoms={symptoms} />
-            {!evening ? (
+            {!evening && premium ? (
               <>
-                <DopamineVault
-                  tokens={tokens}
-                  owned={collection}
-                  equipped={avatar.accessory ?? null}
-                  premium={premium}
-                  onLocked={() => setLockedFeature("vault")}
-                  onSpend={(n) => setTokens((t) => t - n)}
-                  onEarn={(n) => setTokens((t) => t + n)}
-                  onCollect={(id) => onCollectionChange(collection.includes(id) ? collection : [...collection, id])}
-                  onEquip={(id) => setAvatar({ ...avatar, accessory: id })}
-                />
-                <TaxShelf
-                  today={today}
-                  items={taxItems}
-                  premium={premium}
-                  onAdd={(note) => setTaxItems((prev) => [{ id: crypto.randomUUID(), ...parseTaxNote(note, today) }, ...prev])}
-                  onRemove={(id) => setTaxItems((prev) => prev.filter((t) => t.id !== id))}
-                  onLocked={() => setLockedFeature("tax")}
-                />
+                {vault}
+                {taxShelf}
               </>
             ) : null}
           </section>
@@ -215,10 +225,12 @@ export function Dashboard({
             {evening ? (
               <>
                 <EveningRelease tasks={tasks.filter((t) => !releasedIds.includes(t.id))} onRelease={releaseToTomorrow} />
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {dinner}
-                  {music}
-                </div>
+                {premium ? (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {dinner}
+                    {music}
+                  </div>
+                ) : null}
               </>
             ) : (
               <>
@@ -243,18 +255,54 @@ export function Dashboard({
                     <CycleCalendar today={today} profile={profile} tasks={tasks} onCycleDayChange={setActualDay} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <AlignmentCard today={today} cycleDay={cycleDay} phase={phase} />
-                  {music}
-                </div>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <FoodsCard cycleDay={cycleDay} phase={phase} />
-                  {dinner}
-                </div>
+                {premium ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <AlignmentCard today={today} cycleDay={cycleDay} phase={phase} />
+                      {music}
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FoodsCard cycleDay={cycleDay} phase={phase} />
+                      {dinner}
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <AlignmentCard today={today} cycleDay={cycleDay} phase={phase} />
+                    <FoodsCard cycleDay={cycleDay} phase={phase} />
+                  </div>
+                )}
               </>
             )}
           </section>
         </div>
+
+        {!premium ? (
+          <section aria-labelledby="premium-extras-heading" className="mt-14 border-t border-border pt-10">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Premium extras</p>
+                <h2 id="premium-extras-heading" className="mt-2 font-serif text-3xl text-balance">
+                  More ways we can help, whenever you&apos;re ready
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="self-start rounded-full border border-foreground px-4 py-2 text-xs transition-colors hover:bg-foreground hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:self-auto"
+              >
+                See Premium for $4.99/month
+              </button>
+            </div>
+            <div className="mt-8 grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {pillarActions}
+              {dinner}
+              {music}
+              {!evening ? vault : null}
+              {!evening ? taxShelf : null}
+            </div>
+          </section>
+        ) : null}
 
         <footer className="mt-14 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground md:flex-row md:justify-between">
           <p>Twin is a planning companion, not medical advice. Cycle predictions are estimates.</p>
