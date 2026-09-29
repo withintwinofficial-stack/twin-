@@ -33,11 +33,12 @@ interface TwinStageProps {
   onAvatarChange: (v: AvatarConfig) => void
   premium?: boolean
   onUpgrade?: () => void
+  tokens: number
 }
 
 const FREE_STYLE = "chic"
 
-export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, evening = false, onAvatarChange, premium = true, onUpgrade }: TwinStageProps) {
+export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, evening = false, onAvatarChange, premium = true, onUpgrade, tokens }: TwinStageProps) {
   const style = premium ? avatar.style : FREE_STYLE
   const outfit = getOutfit(phase, style, evening)
   const resting = outfit.kind === "lounge"
@@ -54,11 +55,19 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
         }}
       />
 
-      <div className="relative flex items-center justify-between px-1">
-        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Your Twin</p>
-        <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="relative flex items-center justify-between gap-3 px-1">
+        <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
           {evening ? <Sunset className="size-3" aria-hidden /> : resting ? <Moon className="size-3" aria-hidden /> : <Sparkles className="size-3" aria-hidden />}
-          {evening ? "Sunset mode" : resting ? "Resting mode" : "Focused mode"}
+          Your Twin
+        </p>
+        <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 py-1 pr-3 pl-1 backdrop-blur-sm">
+          <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-[var(--phase-ovulatory)]">
+            <span className="size-3 rounded-full border border-card/70" />
+          </span>
+          <span key={tokens} className="font-serif text-base leading-none tabular-nums motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-300">
+            {tokens}
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Dopamine Tokens</span>
         </p>
       </div>
 

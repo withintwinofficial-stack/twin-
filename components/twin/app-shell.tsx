@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
-import { createDefaultProfile, DEFAULT_AVATAR, parseISODate, type AvatarConfig, type CycleProfile } from "@/lib/twin"
+import { createDefaultProfile, DEFAULT_AVATAR, parseISODate, type AccessoryId, type AvatarConfig, type CycleProfile } from "@/lib/twin"
 import { Dashboard, type Plan, type TimeMode } from "./dashboard"
 import { LoginScreen } from "./login-screen"
 import { TrialScreen } from "./trial-screen"
@@ -55,6 +55,7 @@ export function AppShell({ todayISO }: { todayISO: string }) {
   const [timeMode, setTimeMode] = useState<TimeMode>("day")
   const [profile, setProfile] = useState<CycleProfile>(() => createDefaultProfile(today))
   const [avatar, setAvatar] = useState<AvatarConfig>(DEFAULT_AVATAR)
+  const [collection, setCollection] = useState<AccessoryId[]>([])
   const [aligning, setAligning] = useState(false)
   const [alignKey, setAlignKey] = useState(0)
 
@@ -114,6 +115,8 @@ export function AppShell({ todayISO }: { todayISO: string }) {
           onAvatarChange={setAvatar}
           plan={plan}
           onUpgrade={() => setView("trial")}
+          collection={collection}
+          onCollectionChange={setCollection}
         />
       ) : null}
 

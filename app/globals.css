@@ -114,8 +114,22 @@
   --animate-twin-sway: twin-sway 6.5s ease-in-out infinite;
   --animate-twin-hair: twin-hair 6.5s ease-in-out infinite;
   --animate-twin-arm: twin-arm 6.5s ease-in-out infinite;
+  --animate-twin-breath: twin-box-breath 16s ease-in-out infinite;
 
-  @keyframes twin-blink {
+  @keyframes twin-box-breath {
+  0%,
+  100% {
+    transform: scale(0.62);
+  }
+  25%,
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(0.62);
+  }
+}
+@keyframes twin-blink {
     0%, 93%, 100% { transform: scaleY(1); }
     96% { transform: scaleY(0.08); }
   }

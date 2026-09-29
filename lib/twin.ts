@@ -20,11 +20,14 @@ export interface CycleProfile {
 
 export type DayMarker = "period-start" | "period" | "ovulation" | "fertile" | null
 
+export type AccessoryId = "sunglasses" | "crown" | "pearls" | "bow"
+
 export interface AvatarConfig {
   skin: number
   hair: HairStyle
   hairColor: number
   style: StyleId
+  accessory?: AccessoryId | null
 }
 
 export type HairStyle = "bob" | "long" | "bun" | "curly"

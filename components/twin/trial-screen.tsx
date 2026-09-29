@@ -13,7 +13,9 @@ const FEATURES: { name: string; free: boolean; premium: boolean }[] = [
   { name: "Foods and herbs for every phase", free: true, premium: true },
   { name: "Morning and sunset modes", free: true, premium: true },
   { name: "Automated 15-minute dinner curator", free: false, premium: true },
-  { name: "Unlimited AI task-splitting", free: false, premium: true },
+  { name: "Brain Fog Reset and Hyperfocus mode", free: false, premium: true },
+  { name: "Dopamine Vault scratch cards", free: false, premium: true },
+  { name: "ADHD Tax Prevention shelf", free: false, premium: true },
   { name: "Built-in Spotify focus audio", free: false, premium: true },
   { name: "Premium wardrobe collections", free: false, premium: true },
 ]
@@ -72,7 +74,7 @@ export function TrialScreen({ todayISO, onStart, onBack }: { todayISO: string; o
         </h1>
         <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground text-pretty">
           But if you want to supercharge your routine, a small $4.99/month subscription unlocks max automation: your automated 15-minute dinner curator,
-          unlimited AI task-splitting, built-in Spotify focus audio, and our premium wardrobe collections. Cancel anytime, your data and your Twin will always
+          built-in Spotify focus audio, and our premium wardrobe collections. Cancel anytime, your data and your Twin will always
           stay safe with us.
         </p>
       </header>

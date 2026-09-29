@@ -16,6 +16,7 @@ import {
   type Task,
   type TaskScope,
 } from "@/lib/twin"
+import { parseTaxNote, type AccessoryId, type PillarId, type TaxItem } from "@/lib/pillars"
 import { DashboardHeader } from "./dashboard-header"
 import { QuoteCard } from "./quote-card"
 import { TwinStage, type Celebration } from "./twin-stage"
@@ -32,12 +33,18 @@ import { MorningView } from "./morning-view"
 import { EveningRelease } from "./evening-release"
 import { SymptomPills, type Symptom } from "./symptom-pills"
 import { PremiumTeaser } from "./premium-teaser"
-
-function cycleDayFor(profile: CycleProfile, today: Date) {
-  return toModelDay(actualCycleDay(profile, today), profile.cycleLength)
-}
+import { PillarActions } from "./pillar-actions"
+import { DopamineVault } from "./dopamine-vault"
+import { TaxShelf } from "./tax-shelf"
+import { PremiumDrawer } from "./premium-drawer"
+import { BrainFogReset } from "./brain-fog-reset"
+import { HyperfocusMode } from "./hyperfocus-mode"
 
 export type TimeMode = "morning" | "day" | "evening"
+export type Plan = "free" | "premium"
+
+const SEED_TAX_NOTES = ["gym trial ends in 7 days", "bought avocados today"]
+const STARTING_TOKENS = 4
 
 interface DashboardProps {
   todayISO: string
@@ -49,31 +56,44 @@ interface DashboardProps {
   onAvatarChange: (a: AvatarConfig) => void
   plan: Plan
   onUpgrade: () => void
+  collection: AccessoryId[]
+  onCollectionChange: (c: AccessoryId[]) => void
 }
 
-export type Plan = "free" | "premium"
-
-export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onProfileChange, avatar, onAvatarChange: setAvatar, plan, onUpgrade }: DashboardProps) {
+export function Dashboard({
+  todayISO,
+  timeMode,
+  onTimeModeChange,
+  profile,
+  onProfileChange,
+  avatar,
+  onAvatarChange: setAvatar,
+  plan,
+  onUpgrade,
+  collection,
+  onCollectionChange,
+}: DashboardProps) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
   const premium = plan === "premium"
   const [symptoms, setSymptoms] = useState<Symptom[]>([])
   const toggleSymptom = (s: Symptom) => setSymptoms((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
-  const dinner = premium ? (
-    <DinnerCard cycleDay={cycleDayFor(profile, today)} />
-  ) : (
-    <PremiumTeaser title="15-minute dinner" description="Let us curate a cycle-matched dinner you can cook in 15 minutes, every night." onUpgrade={onUpgrade} />
-  )
   const [tasks, setTasks] = useState<Task[]>(() => createSeedTasks(today))
   const actualDay = actualCycleDay(profile, today)
   const cycleDay = toModelDay(actualDay, profile.cycleLength)
   const setActualDay = (day: number) => onProfileChange({ ...profile, lastPeriodStart: toISODate(addDays(today, -(day - 1))) })
   const [releasedIds, setReleasedIds] = useState<string[]>([])
 
+  const [tokens, setTokens] = useState(STARTING_TOKENS)
+  const [lockedFeature, setLockedFeature] = useState<PillarId | null>(null)
+  const [fogOpen, setFogOpen] = useState(false)
+  const [fogSession, setFogSession] = useState(0)
+  const [hyperfocus, setHyperfocus] = useState(false)
+  const [taxItems, setTaxItems] = useState<TaxItem[]>(() => SEED_TAX_NOTES.map((note) => ({ id: note, ...parseTaxNote(note, today) })))
+
   const phase = getPhase(cycleDay)
   const reminders = useMemo(() => generateBioReminders(tasks, cycleDay, today), [tasks, cycleDay, today])
 
-  const updateTask = (id: string, patch: Partial<Task>) =>
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
+  const updateTask = (id: string, patch: Partial<Task>) => setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
 
   const addTask = (title: string, dueDate: string, effort: Effort, scope: TaskScope) =>
     setTasks((prev) => [...prev, { id: crypto.randomUUID(), title, dueDate, effort, scope, done: false, plannedToday: scope === "daily" }])
@@ -84,6 +104,7 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
   const toggleTask = (id: string, done: boolean) => {
     updateTask(id, { done })
     if (!done) return
+    setTokens((t) => t + 1)
     const task = tasks.find((t) => t.id === id)
     if (celebrationTimer.current) clearTimeout(celebrationTimer.current)
     setCelebration({ id: Date.now(), taskId: id, title: task?.title ?? "Task" })
@@ -102,7 +123,23 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
     onTimeModeChange(mode)
   }
 
+  const requirePremium = (feature: PillarId, run: () => void) => (premium ? run() : setLockedFeature(feature))
+
+  const openBrainFog = () =>
+    requirePremium("brainFog", () => {
+      setFogSession((s) => s + 1)
+      setFogOpen(true)
+    })
+
+  const nextTask = (tasks.find((t) => !t.done && t.plannedToday) ?? tasks.find((t) => !t.done))?.title
+
   const doneCount = tasks.filter((t) => t.done).length
+
+  const dinner = premium ? (
+    <DinnerCard cycleDay={cycleDay} />
+  ) : (
+    <PremiumTeaser title="15-minute dinner" description="Let us curate a cycle-matched dinner you can cook in 15 minutes, every night." onUpgrade={onUpgrade} />
+  )
   const music = premium ? (
     <MusicCard phase={phase} />
   ) : (
@@ -111,6 +148,10 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
 
   if (timeMode === "morning") {
     return <MorningView avatar={avatar} phase={phase} onWake={() => changeMode("day")} />
+  }
+
+  if (hyperfocus && premium) {
+    return <HyperfocusMode initialFocus={nextTask ?? ""} onExit={() => setHyperfocus(false)} />
   }
 
   const evening = timeMode === "evening"
@@ -135,13 +176,36 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
               onAvatarChange={setAvatar}
               premium={premium}
               onUpgrade={onUpgrade}
+              tokens={tokens}
             />
-            {!evening ? <SymptomPills logged={symptoms} onToggle={toggleSymptom} /> : null}
+            {!evening ? (
+              <>
+                <PillarActions premium={premium} onBrainFog={openBrainFog} onHyperfocus={() => requirePremium("hyperfocus", () => setHyperfocus(true))} />
+                <SymptomPills logged={symptoms} onToggle={toggleSymptom} />
+              </>
+            ) : null}
             <TwinWhispers doneCount={doneCount} evening={evening} loggedSymptoms={symptoms} />
             {!evening ? (
               <>
-                <FoodsCard cycleDay={cycleDay} phase={phase} />
-                {dinner}
+                <DopamineVault
+                  tokens={tokens}
+                  owned={collection}
+                  equipped={avatar.accessory ?? null}
+                  premium={premium}
+                  onLocked={() => setLockedFeature("vault")}
+                  onSpend={(n) => setTokens((t) => t - n)}
+                  onEarn={(n) => setTokens((t) => t + n)}
+                  onCollect={(id) => onCollectionChange(collection.includes(id) ? collection : [...collection, id])}
+                  onEquip={(id) => setAvatar({ ...avatar, accessory: id })}
+                />
+                <TaxShelf
+                  today={today}
+                  items={taxItems}
+                  premium={premium}
+                  onAdd={(note) => setTaxItems((prev) => [{ id: crypto.randomUUID(), ...parseTaxNote(note, today) }, ...prev])}
+                  onRemove={(id) => setTaxItems((prev) => prev.filter((t) => t.id !== id))}
+                  onLocked={() => setLockedFeature("tax")}
+                />
               </>
             ) : null}
           </section>
@@ -182,6 +246,10 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
                   <AlignmentCard today={today} cycleDay={cycleDay} phase={phase} />
                   {music}
                 </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FoodsCard cycleDay={cycleDay} phase={phase} />
+                  {dinner}
+                </div>
               </>
             )}
           </section>
@@ -192,6 +260,16 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
           <p className="font-serif text-sm italic">Made for brains that bloom in seasons.</p>
         </footer>
       </div>
+
+      <PremiumDrawer
+        feature={lockedFeature}
+        onClose={() => setLockedFeature(null)}
+        onUpgrade={() => {
+          setLockedFeature(null)
+          onUpgrade()
+        }}
+      />
+      <BrainFogReset key={fogSession} open={fogOpen} onClose={() => setFogOpen(false)} nextTask={nextTask} />
     </div>
   )
 }

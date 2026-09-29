@@ -1,4 +1,4 @@
-import { HAIR_COLORS, SKIN_TONES, type AvatarConfig, type Expression, type HairStyle, type Outfit } from "@/lib/twin"
+import { HAIR_COLORS, SKIN_TONES, type AccessoryId, type AvatarConfig, type Expression, type HairStyle, type Outfit } from "@/lib/twin"
 
 const INK = "#2a2622"
 const CREAM = "#f7f3ec"
@@ -120,12 +120,72 @@ function Face({ expression }: { expression: Expression }) {
   )
 }
 
-function HeadFront({ skin, hair, style, expression }: { skin: string; hair: string; style: HairStyle; expression: Expression }) {
+const GOLD = "#c9a45f"
+const GOLD_DEEP = "#a8834a"
+const ROSE = "#b9837a"
+
+function Accessory({ id }: { id: AccessoryId }) {
+  switch (id) {
+    case "sunglasses":
+      return (
+        <g>
+          <path d="M-27 0 L-19 1 M27 0 L19 1" stroke={INK} strokeWidth={1.3} strokeLinecap="round" />
+          <rect x={-19} y={-3} width={16} height={11} rx={5} fill={INK} opacity={0.9} />
+          <rect x={3} y={-3} width={16} height={11} rx={5} fill={INK} opacity={0.9} />
+          <path d="M-3 0 Q0 -2.4 3 0" stroke={INK} strokeWidth={1.4} fill="none" />
+          <path d="M-16 -0.4 L-12 -0.4 M6 -0.4 L10 -0.4" stroke={CREAM} strokeWidth={1.1} strokeLinecap="round" opacity={0.55} />
+        </g>
+      )
+    case "crown":
+      return (
+        <g transform="translate(0 -40)">
+          <path d="M-13 2 L-14 -10 L-7 -4 L0 -13 L7 -4 L14 -10 L13 2 Q0 5 -13 2 Z" fill={GOLD} stroke={GOLD_DEEP} strokeWidth={0.9} strokeLinejoin="round" />
+          <circle cx={0} cy={-13} r={1.6} fill={CREAM} />
+          <circle cx={-14} cy={-10} r={1.3} fill={CREAM} />
+          <circle cx={14} cy={-10} r={1.3} fill={CREAM} />
+          <circle cx={0} cy={-1} r={1.8} fill={ROSE} />
+        </g>
+      )
+    case "pearls":
+      return (
+        <g>
+          {[-1, 1].map((s) => (
+            <g key={s}>
+              <path d={`M${26 * s} 8 L${26 * s} 12.5`} stroke={GOLD_DEEP} strokeWidth={0.8} />
+              <circle cx={26 * s} cy={15.5} r={3} fill={CREAM} stroke="#d8ccb8" strokeWidth={0.8} />
+              <circle cx={26 * s - 0.9} cy={14.6} r={0.9} fill="#ffffff" opacity={0.85} />
+            </g>
+          ))}
+        </g>
+      )
+    case "bow":
+      return (
+        <g transform="translate(20 -33) rotate(18)" fill={ROSE}>
+          <path d="M0 0 Q-11 -9 -12 0 Q-11 9 0 0 Z" />
+          <path d="M0 0 Q11 -9 12 0 Q11 9 0 0 Z" />
+          <path d="M-1 1 L-5 11 M1 1 L5 10" stroke={ROSE} strokeWidth={2.2} strokeLinecap="round" />
+          <circle r={2.6} fill="#a8766c" />
+        </g>
+      )
+  }
+}
+
+export function AccessoryPreview({ id }: { id: AccessoryId }) {
+  return (
+    <svg viewBox="-36 -58 72 84" className="h-full w-full" aria-hidden>
+      <path d={FACE_PATH} fill="#ece5da" />
+      <Accessory id={id} />
+    </svg>
+  )
+}
+
+function HeadFront({ skin, hair, style, expression, accessory }: { skin: string; hair: string; style: HairStyle; expression: Expression; accessory?: AccessoryId | null }) {
   return (
     <>
       <path d={FACE_PATH} fill={skin} />
       <HairFront style={style} color={hair} />
       <Face expression={expression} />
+      {accessory ? <Accessory id={accessory} /> : null}
     </>
   )
 }
@@ -145,6 +205,7 @@ interface FigureProps {
   style: HairStyle
   outfit: Outfit
   expression: Expression
+  accessory?: AccessoryId | null
 }
 
 const LEGS = {
@@ -293,7 +354,7 @@ function BusinessOutfit({ skin, outfit }: { skin: string; outfit: Outfit }) {
   )
 }
 
-function StandingTwin({ skin, hair, style, outfit, expression }: FigureProps) {
+function StandingTwin({ skin, hair, style, outfit, expression, accessory }: FigureProps) {
   return (
     <svg viewBox="0 0 200 290" className="h-full w-full" role="img" aria-label={`Your Twin wearing ${outfit.label}`}>
       <g transform="translate(100 58)">
@@ -306,13 +367,13 @@ function StandingTwin({ skin, hair, style, outfit, expression }: FigureProps) {
       {outfit.kind === "business" ? <BusinessOutfit skin={skin} outfit={outfit} /> : null}
       {outfit.kind === "chic" ? <ChicOutfit skin={skin} outfit={outfit} /> : null}
       <g transform="translate(100 58) rotate(-3)">
-        <HeadFront skin={skin} hair={hair} style={style} expression={expression} />
+        <HeadFront skin={skin} hair={hair} style={style} expression={expression} accessory={accessory} />
       </g>
     </svg>
   )
 }
 
-function SeatedTwin({ skin, hair, style, outfit, expression }: FigureProps) {
+function SeatedTwin({ skin, hair, style, outfit, expression, accessory }: FigureProps) {
   return (
     <svg viewBox="0 0 200 290" className="h-full w-full" role="img" aria-label={`Your Twin resting on a cushion with a warm mug, wearing ${outfit.label}`}>
       <ellipse cx={100} cy={266} rx={82} ry={20} fill="#e2d7c7" />
@@ -354,7 +415,7 @@ function SeatedTwin({ skin, hair, style, outfit, expression }: FigureProps) {
         <circle cx={111} cy={214} r={5} fill={skin} />
 
         <g transform="translate(100 122) rotate(-6)">
-          <HeadFront skin={skin} hair={hair} style={style} expression={expression} />
+          <HeadFront skin={skin} hair={hair} style={style} expression={expression} accessory={accessory} />
         </g>
       </g>
     </svg>
@@ -396,6 +457,6 @@ export function TwinAvatar({ config, outfit, pose, expression }: { config: Avata
   const skin = SKIN_TONES[config.skin].value
   const hair = HAIR_COLORS[config.hairColor].value
   if (pose === "asleep") return <SleepingTwin skin={skin} hair={hair} style={config.hair} />
-  const props = { skin, hair, style: config.hair, outfit, expression }
+  const props = { skin, hair, style: config.hair, outfit, expression, accessory: config.accessory ?? null }
   return pose === "seated" ? <SeatedTwin {...props} /> : <StandingTwin {...props} />
 }
