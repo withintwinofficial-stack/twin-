@@ -14,6 +14,8 @@
   --color-period: var(--period);
   --color-period-foreground: var(--period-foreground);
   --color-fertile: var(--fertile);
+  --color-bar: var(--bar);
+  --color-bar-foreground: var(--bar-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -87,6 +89,8 @@
   --period: #c07f7a;
   --period-foreground: #fbf6f1;
   --fertile: #8ea3b4;
+  --bar: #2a2622;
+  --bar-foreground: #faf7f1;
   --sidebar: #faf7f1;
   --sidebar-foreground: #2a2622;
   --sidebar-primary: #2a2622;
@@ -95,6 +99,78 @@
   --sidebar-accent-foreground: #2a2622;
   --sidebar-border: #ddd3c4;
   --sidebar-ring: #a86f52;
+}
+
+[data-theme='cosmic'] {
+  color-scheme: light;
+  --background: #fff3ea;
+  --foreground: #2b1745;
+  --card: #fffaf4;
+  --card-foreground: #2b1745;
+  --popover: #fffaf4;
+  --popover-foreground: #2b1745;
+  --primary: #3b1d63;
+  --primary-foreground: #fff6ec;
+  --secondary: #ffe2ef;
+  --secondary-foreground: #2b1745;
+  --muted: #fbe6dc;
+  --muted-foreground: #74558f;
+  --accent: #ff4f9a;
+  --accent-foreground: #fffaf4;
+  --border: #e7b9d6;
+  --input: #e7b9d6;
+  --ring: #ff4f9a;
+  --radius: 1.35rem;
+  --phase-menstrual: #ff4f7b;
+  --phase-follicular: #22b07d;
+  --phase-ovulatory: #ffab1f;
+  --phase-luteal: #8b5cf6;
+  --period: #ff5d86;
+  --period-foreground: #fffaf4;
+  --fertile: #3aa7ff;
+  --bar: #3b1d63;
+  --bar-foreground: #fff6ec;
+  --rainbow: linear-gradient(115deg, #ff4f7b, #ffab1f, #ffe14d, #22b07d, #3aa7ff, #8b5cf6, #ff4f9a);
+}
+
+[data-theme='cyber'] {
+  color-scheme: dark;
+  --background: #07070c;
+  --foreground: #e9ecff;
+  --card: #0e0f18;
+  --card-foreground: #e9ecff;
+  --popover: #0e0f18;
+  --popover-foreground: #e9ecff;
+  --primary: #2ad4ff;
+  --primary-foreground: #05060a;
+  --secondary: #161827;
+  --secondary-foreground: #e9ecff;
+  --muted: #141523;
+  --muted-foreground: #8d93b8;
+  --accent: #ff3ea5;
+  --accent-foreground: #05060a;
+  --destructive: #ff5470;
+  --border: #262a44;
+  --input: #262a44;
+  --ring: #2ad4ff;
+  --radius: 0.75rem;
+  --chart-1: #ff3ea5;
+  --chart-2: #b6ff3c;
+  --chart-3: #2ad4ff;
+  --chart-4: #a98bff;
+  --chart-5: #e9ecff;
+  --phase-menstrual: #ff3ea5;
+  --phase-follicular: #b6ff3c;
+  --phase-ovulatory: #2ad4ff;
+  --phase-luteal: #a98bff;
+  --period: #ff3ea5;
+  --period-foreground: #05060a;
+  --fertile: #2ad4ff;
+  --bar: #05060a;
+  --bar-foreground: #2ad4ff;
+  --neon-blue: #2ad4ff;
+  --neon-pink: #ff3ea5;
+  --neon-lime: #b6ff3c;
 }
 
 @theme {
@@ -213,4 +289,60 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Theme textures: panel cards are the `rounded-2xl/3xl border bg-card` surfaces across the dashboard. */
+[data-theme='cosmic'] body {
+  background-color: var(--background);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' viewBox='0 0 120 40'%3E%3Cpath d='M0 20 Q15 4 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%23ff4f9a' stroke-opacity='.16' stroke-width='3'/%3E%3Cpath d='M0 34 Q15 18 30 34 T60 34 T90 34 T120 34' fill='none' stroke='%238b5cf6' stroke-opacity='.12' stroke-width='3'/%3E%3C/svg%3E");
+  background-size: 120px 40px;
+}
+
+[data-theme='cosmic'] :is(.rounded-2xl, .rounded-3xl).border.bg-card {
+  border: 3px solid transparent;
+  background:
+    repeating-conic-gradient(#ff4f9a0d 0 25%, transparent 0 50%) 0 0 / 28px 28px padding-box,
+    linear-gradient(var(--card), var(--card)) padding-box,
+    var(--rainbow) border-box;
+  box-shadow: 6px 6px 0 #3b1d6322;
+}
+
+[data-theme='cosmic'] [data-preview-bar] {
+  border-bottom: 4px solid transparent;
+  border-image: var(--rainbow) 1;
+}
+
+[data-theme='cyber'] body {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(#2ad4ff0a 1px, transparent 1px),
+    linear-gradient(90deg, #2ad4ff0a 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+[data-theme='cyber'] :is(.rounded-2xl, .rounded-3xl).border.bg-card {
+  --glow: var(--neon-blue);
+  border-color: color-mix(in srgb, var(--glow) 75%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--glow) 25%, transparent),
+    0 0 18px color-mix(in srgb, var(--glow) 28%, transparent),
+    inset 0 0 22px color-mix(in srgb, var(--glow) 7%, transparent);
+}
+
+[data-theme='cyber'] :is(.rounded-2xl, .rounded-3xl).border.bg-card:nth-child(3n + 2) {
+  --glow: var(--neon-pink);
+}
+
+[data-theme='cyber'] :is(.rounded-2xl, .rounded-3xl).border.bg-card:nth-child(3n) {
+  --glow: var(--neon-lime);
+}
+
+[data-theme='cyber'] [data-preview-bar] {
+  border-bottom: 1px solid var(--neon-blue);
+  box-shadow: 0 0 20px #2ad4ff55;
+}
+
+[data-theme='cyber'] :is(h1, h2, h3).font-serif {
+  text-shadow: 0 0 14px #2ad4ff55;
 }
