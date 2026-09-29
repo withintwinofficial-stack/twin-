@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { clearPersistentState, usePersistentState } from "@/hooks/use-persistent-state"
 import { createDefaultProfile, DEFAULT_AVATAR, parseISODate, type AccessoryId, type AvatarConfig, type CycleProfile } from "@/lib/twin"
 import { Dashboard, type Plan, type TimeMode } from "./dashboard"
 import { LoginScreen } from "./login-screen"
@@ -66,13 +67,13 @@ function BarGroup({ label, children }: { label: string; children: React.ReactNod
 
 export function AppShell({ todayISO }: { todayISO: string }) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
-  const [view, setView] = useState<View>("sandbox")
-  const [plan, setPlan] = useState<Plan>("premium")
-  const [theme, setTheme] = useState<Theme>("chic")
+  const [view, setView] = usePersistentState<View>("view", "sandbox")
+  const [plan, setPlan] = usePersistentState<Plan>("plan", "premium")
+  const [theme, setTheme] = usePersistentState<Theme>("theme", "chic")
   const [timeMode, setTimeMode] = useState<TimeMode>("day")
-  const [profile, setProfile] = useState<CycleProfile>(() => createDefaultProfile(today))
-  const [avatar, setAvatar] = useState<AvatarConfig>(DEFAULT_AVATAR)
-  const [collection, setCollection] = useState<AccessoryId[]>([])
+  const [profile, setProfile] = usePersistentState<CycleProfile>("profile", () => createDefaultProfile(today))
+  const [avatar, setAvatar] = usePersistentState<AvatarConfig>("avatar", DEFAULT_AVATAR)
+  const [collection, setCollection] = usePersistentState<AccessoryId[]>("collection", [])
   const [aligning, setAligning] = useState(false)
   const [alignKey, setAlignKey] = useState(0)
 
@@ -82,6 +83,12 @@ export function AppShell({ todayISO }: { todayISO: string }) {
     root.dataset.theme = theme
     root.classList.toggle("dark", theme === "cyber")
   }, [theme])
+
+  const resetSandbox = () => {
+    if (!window.confirm("Clear all saved Twin progress on this browser and start fresh?")) return
+    clearPersistentState()
+    window.location.reload()
+  }
 
   const startAlign = () => {
     setAlignKey((k) => k + 1)
@@ -114,6 +121,13 @@ export function AppShell({ todayISO }: { todayISO: string }) {
             <BarGroup label="Aesthetic">
               <Segmented label="Aesthetic theme" options={THEMES} value={theme} onChange={setTheme} />
             </BarGroup>
+            <button
+              type="button"
+              onClick={resetSandbox}
+              className="rounded-full border border-bar-foreground/25 px-3 py-1 text-xs text-bar-foreground/70 transition-colors hover:text-bar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bar-foreground/60"
+            >
+              Reset saved data
+            </button>
           </div>
           {view === "sandbox" ? (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

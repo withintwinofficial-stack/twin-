@@ -16,6 +16,7 @@ import {
   type Task,
   type TaskScope,
 } from "@/lib/twin"
+import { usePersistentState } from "@/hooks/use-persistent-state"
 import { parseTaxNote, type AccessoryId, type PillarId, type TaxItem } from "@/lib/pillars"
 import { DashboardHeader } from "./dashboard-header"
 import { QuoteCard } from "./quote-card"
@@ -77,18 +78,18 @@ export function Dashboard({
   const premium = plan === "premium"
   const [symptoms, setSymptoms] = useState<Symptom[]>([])
   const toggleSymptom = (s: Symptom) => setSymptoms((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
-  const [tasks, setTasks] = useState<Task[]>(() => createSeedTasks(today))
+  const [tasks, setTasks] = usePersistentState<Task[]>("tasks", () => createSeedTasks(today))
   const actualDay = actualCycleDay(profile, today)
   const cycleDay = toModelDay(actualDay, profile.cycleLength)
   const setActualDay = (day: number) => onProfileChange({ ...profile, lastPeriodStart: toISODate(addDays(today, -(day - 1))) })
   const [releasedIds, setReleasedIds] = useState<string[]>([])
 
-  const [tokens, setTokens] = useState(STARTING_TOKENS)
+  const [tokens, setTokens] = usePersistentState("tokens", STARTING_TOKENS)
   const [lockedFeature, setLockedFeature] = useState<PillarId | null>(null)
   const [fogOpen, setFogOpen] = useState(false)
   const [fogSession, setFogSession] = useState(0)
   const [hyperfocus, setHyperfocus] = useState(false)
-  const [taxItems, setTaxItems] = useState<TaxItem[]>(() => SEED_TAX_NOTES.map((note) => ({ id: note, ...parseTaxNote(note, today) })))
+  const [taxItems, setTaxItems] = usePersistentState<TaxItem[]>("taxItems", () => SEED_TAX_NOTES.map((note) => ({ id: note, ...parseTaxNote(note, today) })))
 
   const phase = getPhase(cycleDay)
   const reminders = useMemo(() => generateBioReminders(tasks, cycleDay, today), [tasks, cycleDay, today])
