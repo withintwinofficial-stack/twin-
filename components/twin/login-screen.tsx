@@ -1,6 +1,7 @@
 "use client"
 
-import type { FormEvent } from "react"
+import { useState, type FormEvent } from "react"
+import { cn } from "@/lib/utils"
 import { DEFAULT_AVATAR, getOutfit, getPhase } from "@/lib/twin"
 import { TwinAvatar } from "./twin-avatar"
 
@@ -24,10 +25,15 @@ function Field({ id, label, type, autoComplete }: { id: string; label: string; t
   )
 }
 
-export function LoginScreen({ onTrial, onEnter }: { onTrial: () => void; onEnter: () => void }) {
+type Mode = "signup" | "login"
+
+export function LoginScreen({ onTrial, onEnterFree }: { onTrial: () => void; onEnterFree: () => void }) {
+  const [mode, setMode] = useState<Mode>("signup")
+  const signup = mode === "signup"
+
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    onEnter()
+    onEnterFree()
   }
 
   return (
@@ -38,25 +44,39 @@ export function LoginScreen({ onTrial, onEnter }: { onTrial: () => void; onEnter
         </p>
         <h1 className="mt-6 max-w-sm font-serif text-3xl leading-tight text-balance">A planner that moves with your brain and your body.</h1>
 
-        <form onSubmit={submit} className="mt-10 flex max-w-sm flex-col gap-7">
+        <div role="tablist" aria-label="Account" className="mt-10 flex max-w-sm gap-6 border-b border-border">
+          {(["signup", "login"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className={cn(
+                "-mb-px border-b pb-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                mode === m ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {m === "signup" ? "Create free account" : "Log in"}
+            </button>
+          ))}
+        </div>
+
+        <form key={mode} onSubmit={submit} className="mt-8 flex max-w-sm flex-col gap-7">
           <Field id="email" label="Email" type="email" autoComplete="email" />
-          <Field id="password" label="Password" type="password" autoComplete="current-password" />
+          <Field id="password" label="Password" type="password" autoComplete={signup ? "new-password" : "current-password"} />
           <button
             type="submit"
             className="rounded-full bg-primary py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Log in
+            {signup ? "Create my free account" : "Log in"}
           </button>
+          {signup ? (
+            <p className="-mt-3 text-center text-xs text-muted-foreground">Free forever. No card needed.</p>
+          ) : null}
         </form>
 
         <div className="mt-4 flex max-w-sm flex-col gap-4">
-          <button
-            type="button"
-            onClick={onEnter}
-            className="rounded-full border border-foreground py-3 text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Try for free first (no account needed)
-          </button>
           <p className="text-center text-xs text-muted-foreground">
             Want everything?{" "}
             <button type="button" onClick={onTrial} className="text-foreground underline underline-offset-4 hover:text-accent">

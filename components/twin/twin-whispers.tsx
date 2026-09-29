@@ -1,35 +1,36 @@
 "use client"
 
 import { useState } from "react"
-import { energyScore, type Phase } from "@/lib/twin"
+import { Sparkles } from "lucide-react"
+import type { Symptom } from "./symptom-pills"
 
-function buildWhispers(phase: Phase, energy: number, doneCount: number, evening: boolean) {
+const PREDICTIVE_WHISPER =
+  "We usually note a recurring hormonal headache and heavy fatigue around Day 24, which is in two days. Let's proactively protect our focus: grab a big glass of water, up our protein intake at lunch, and we've automatically scaled back tomorrow's major chores so we don't hit a wall. We've got this."
+
+function eveningWhispers(doneCount: number) {
   const finished = doneCount === 0 ? "nothing yet" : doneCount === 1 ? "one thing" : `${doneCount} things`
-  if (evening) {
-    return [
-      `You finished ${finished} today. That's the whole assignment. Laptop can close now.`,
-      "The unfinished list isn't a verdict. It's just tomorrow's menu.",
-      "Brain's off the clock. Mine too, I've got tea.",
-    ]
-  }
-  if (phase.energy === "low") {
-    return [
-      `Hey, it's okay that you've only done ${finished} today. Your energy is at ${energy}% right now. Let's close the laptop soon.`,
-      "Low battery isn't laziness, it's progesterone. One tiny task, then a snack?",
-      "If it's not on fire, it can wait for your follicular era.",
-    ]
-  }
   return [
-    `Energy's at ${energy}%. This is your window, so pick the scary task first.`,
-    `${doneCount > 0 ? `${doneCount} down already.` : "Fresh start."} Your dopamine is on our side this week.`,
-    "Starting is the hard part and right now starting is cheap. Go.",
+    `We finished ${finished} today. That's the whole assignment. Laptop can close now.`,
+    "Our unfinished list isn't a verdict. It's just tomorrow's menu.",
+    "We're off the clock. I've got tea, you get the blanket.",
   ]
 }
 
-export function TwinWhispers({ phase, cycleDay, doneCount, evening = false }: { phase: Phase; cycleDay: number; doneCount: number; evening?: boolean }) {
+function formatList(items: string[]) {
+  if (items.length <= 1) return items.join("")
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
+}
+
+interface TwinWhispersProps {
+  doneCount: number
+  evening?: boolean
+  loggedSymptoms?: Symptom[]
+}
+
+export function TwinWhispers({ doneCount, evening = false, loggedSymptoms = [] }: TwinWhispersProps) {
   const [index, setIndex] = useState(0)
-  const whispers = buildWhispers(phase, energyScore(cycleDay), doneCount, evening)
-  const text = whispers[index % whispers.length]
+  const eveningLines = eveningWhispers(doneCount)
+  const text = evening ? eveningLines[index % eveningLines.length] : PREDICTIVE_WHISPER
 
   return (
     <section aria-labelledby="whispers-heading" className="relative">
@@ -39,17 +40,29 @@ export function TwinWhispers({ phase, cycleDay, doneCount, evening = false }: { 
           <h2 id="whispers-heading" className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             Twin whispers
           </h2>
-          <button
-            type="button"
-            onClick={() => setIndex((i) => i + 1)}
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Another
-          </button>
+          {evening ? (
+            <button
+              type="button"
+              onClick={() => setIndex((i) => i + 1)}
+              className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Another
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <Sparkles className="size-3" aria-hidden />
+              Predictive
+            </span>
+          )}
         </div>
-        <p key={text} aria-live="polite" className="mt-2 font-serif text-lg leading-snug text-pretty animate-in fade-in duration-500">
+        <p key={text} className="mt-2 font-serif text-lg leading-snug text-pretty animate-in fade-in duration-500">
           {text}
         </p>
+        {!evening && loggedSymptoms.length > 0 ? (
+          <p aria-live="polite" className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground animate-in fade-in duration-500">
+            Noted: {formatList(loggedSymptoms.map((s) => s.toLowerCase()))} today. We&apos;ll add it to our pattern so next cycle&apos;s forecast gets sharper.
+          </p>
+        ) : null}
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { Moon, Sparkles, Sunset } from "lucide-react"
+import { Lock, Moon, Sparkles, Sunset } from "lucide-react"
 import { energyScore, getOutfit, WARDROBE_STYLES, type AvatarConfig, type Phase } from "@/lib/twin"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -31,10 +31,15 @@ interface TwinStageProps {
   celebration: Celebration | null
   evening?: boolean
   onAvatarChange: (v: AvatarConfig) => void
+  premium?: boolean
+  onUpgrade?: () => void
 }
 
-export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, evening = false, onAvatarChange }: TwinStageProps) {
-  const outfit = getOutfit(phase, avatar.style, evening)
+const FREE_STYLE = "chic"
+
+export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, evening = false, onAvatarChange, premium = true, onUpgrade }: TwinStageProps) {
+  const style = premium ? avatar.style : FREE_STYLE
+  const outfit = getOutfit(phase, style, evening)
   const resting = outfit.kind === "lounge"
   const energy = energyScore(cycleDay)
   const expression = resting ? "sleepy" : "focused"
@@ -59,20 +64,24 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
 
       <div role="tablist" aria-label="Wardrobe style" className="relative mt-4 grid grid-cols-4 gap-1 rounded-full border border-border bg-card/60 p-1 backdrop-blur-sm">
         {WARDROBE_STYLES.map((s) => {
-          const selected = avatar.style === s.id
+          const locked = !premium && s.id !== FREE_STYLE
+          const selected = style === s.id
           return (
             <button
               key={s.id}
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => onAvatarChange({ ...avatar, style: s.id })}
+              aria-label={locked ? `${s.name}, premium collection` : undefined}
+              onClick={() => (locked ? onUpgrade?.() : onAvatarChange({ ...avatar, style: s.id }))}
               className={cn(
-                "truncate rounded-full px-1 py-1.5 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "inline-flex items-center justify-center gap-1 truncate rounded-full px-1 py-1.5 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 selected ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                locked && "text-muted-foreground/60",
               )}
             >
-              {s.name}
+              {locked ? <Lock className="size-2.5 shrink-0" aria-hidden /> : null}
+              <span className="truncate">{s.name}</span>
             </button>
           )
         })}

@@ -30,6 +30,12 @@ import { MusicCard } from "./music-card"
 import { AlignmentCard } from "./alignment-card"
 import { MorningView } from "./morning-view"
 import { EveningRelease } from "./evening-release"
+import { SymptomPills, type Symptom } from "./symptom-pills"
+import { PremiumTeaser } from "./premium-teaser"
+
+function cycleDayFor(profile: CycleProfile, today: Date) {
+  return toModelDay(actualCycleDay(profile, today), profile.cycleLength)
+}
 
 export type TimeMode = "morning" | "day" | "evening"
 
@@ -41,10 +47,22 @@ interface DashboardProps {
   onProfileChange: (p: CycleProfile) => void
   avatar: AvatarConfig
   onAvatarChange: (a: AvatarConfig) => void
+  plan: Plan
+  onUpgrade: () => void
 }
 
-export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onProfileChange, avatar, onAvatarChange: setAvatar }: DashboardProps) {
+export type Plan = "free" | "premium"
+
+export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onProfileChange, avatar, onAvatarChange: setAvatar, plan, onUpgrade }: DashboardProps) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
+  const premium = plan === "premium"
+  const [symptoms, setSymptoms] = useState<Symptom[]>([])
+  const toggleSymptom = (s: Symptom) => setSymptoms((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+  const dinner = premium ? (
+    <DinnerCard cycleDay={cycleDayFor(profile, today)} />
+  ) : (
+    <PremiumTeaser title="15-minute dinner" description="Let us curate a cycle-matched dinner you can cook in 15 minutes, every night." onUpgrade={onUpgrade} />
+  )
   const [tasks, setTasks] = useState<Task[]>(() => createSeedTasks(today))
   const actualDay = actualCycleDay(profile, today)
   const cycleDay = toModelDay(actualDay, profile.cycleLength)
@@ -85,6 +103,11 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
   }
 
   const doneCount = tasks.filter((t) => t.done).length
+  const music = premium ? (
+    <MusicCard phase={phase} />
+  ) : (
+    <PremiumTeaser title="Focus audio" description="Built-in Spotify focus sessions, tuned to our energy for each phase." onUpgrade={onUpgrade} />
+  )
 
   if (timeMode === "morning") {
     return <MorningView avatar={avatar} phase={phase} onWake={() => changeMode("day")} />
@@ -110,12 +133,15 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
               celebration={celebration}
               evening={evening}
               onAvatarChange={setAvatar}
+              premium={premium}
+              onUpgrade={onUpgrade}
             />
-            <TwinWhispers phase={phase} cycleDay={cycleDay} doneCount={doneCount} evening={evening} />
+            {!evening ? <SymptomPills logged={symptoms} onToggle={toggleSymptom} /> : null}
+            <TwinWhispers doneCount={doneCount} evening={evening} loggedSymptoms={symptoms} />
             {!evening ? (
               <>
                 <FoodsCard cycleDay={cycleDay} phase={phase} />
-                <DinnerCard cycleDay={cycleDay} />
+                {dinner}
               </>
             ) : null}
           </section>
@@ -125,8 +151,8 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
               <>
                 <EveningRelease tasks={tasks.filter((t) => !releasedIds.includes(t.id))} onRelease={releaseToTomorrow} />
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <DinnerCard cycleDay={cycleDay} />
-                  <MusicCard phase={phase} />
+                  {dinner}
+                  {music}
                 </div>
               </>
             ) : (
@@ -154,7 +180,7 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onPro
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <AlignmentCard today={today} cycleDay={cycleDay} phase={phase} />
-                  <MusicCard phase={phase} />
+                  {music}
                 </div>
               </>
             )}

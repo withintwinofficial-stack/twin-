@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { createDefaultProfile, DEFAULT_AVATAR, parseISODate, type AvatarConfig, type CycleProfile } from "@/lib/twin"
-import { Dashboard, type TimeMode } from "./dashboard"
+import { Dashboard, type Plan, type TimeMode } from "./dashboard"
 import { LoginScreen } from "./login-screen"
 import { TrialScreen } from "./trial-screen"
 import { AlignTwinDialog } from "./align-twin-dialog"
@@ -20,6 +20,11 @@ const TIME_MODES: { id: TimeMode; label: string }[] = [
   { id: "morning", label: "Morning" },
   { id: "day", label: "Day" },
   { id: "evening", label: "Evening" },
+]
+
+const PLANS: { id: Plan; label: string }[] = [
+  { id: "free", label: "Free version" },
+  { id: "premium", label: "Premium" },
 ]
 
 function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
@@ -46,6 +51,7 @@ function Segmented<T extends string>({ label, options, value, onChange }: { labe
 export function AppShell({ todayISO }: { todayISO: string }) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
   const [view, setView] = useState<View>("sandbox")
+  const [plan, setPlan] = useState<Plan>("premium")
   const [timeMode, setTimeMode] = useState<TimeMode>("day")
   const [profile, setProfile] = useState<CycleProfile>(() => createDefaultProfile(today))
   const [avatar, setAvatar] = useState<AvatarConfig>(DEFAULT_AVATAR)
@@ -61,6 +67,13 @@ export function AppShell({ todayISO }: { todayISO: string }) {
     setProfile(p)
     setAvatar(a)
     setAligning(false)
+    setPlan("premium")
+    setTimeMode("day")
+    setView("sandbox")
+  }
+
+  const enterFree = () => {
+    setPlan("free")
     setTimeMode("day")
     setView("sandbox")
   }
@@ -74,15 +87,21 @@ export function AppShell({ todayISO }: { todayISO: string }) {
             <Segmented label="Screen" options={VIEWS} value={view} onChange={setView} />
           </div>
           {view === "sandbox" ? (
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] uppercase tracking-[0.22em] text-primary-foreground/60">Simulate time</span>
-              <Segmented label="Simulate time" options={TIME_MODES} value={timeMode} onChange={setTimeMode} />
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-primary-foreground/60">Plan</span>
+                <Segmented label="Plan" options={PLANS} value={plan} onChange={setPlan} />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-primary-foreground/60">Simulate time</span>
+                <Segmented label="Simulate time" options={TIME_MODES} value={timeMode} onChange={setTimeMode} />
+              </div>
             </div>
           ) : null}
         </div>
       </div>
 
-      {view === "login" ? <LoginScreen onTrial={() => setView("trial")} onEnter={() => setView("sandbox")} /> : null}
+      {view === "login" ? <LoginScreen onTrial={() => setView("trial")} onEnterFree={enterFree} /> : null}
       {view === "trial" ? <TrialScreen todayISO={todayISO} onStart={startAlign} onBack={() => setView("login")} /> : null}
       {view === "sandbox" ? (
         <Dashboard
@@ -93,6 +112,8 @@ export function AppShell({ todayISO }: { todayISO: string }) {
           onProfileChange={setProfile}
           avatar={avatar}
           onAvatarChange={setAvatar}
+          plan={plan}
+          onUpgrade={() => setView("trial")}
         />
       ) : null}
 
