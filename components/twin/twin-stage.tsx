@@ -1,4 +1,8 @@
+"use client"
+
+import { useEffect, useRef, useState } from "react"
 import { Lock, Moon, Sparkles, Sunset } from "lucide-react"
+import { MiniTwin } from "./mini-twin"
 import { energyScore, getOutfit, WARDROBE_STYLES, type AvatarConfig, type Phase } from "@/lib/twin"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -45,8 +49,33 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
   const energy = energyScore(cycleDay)
   const expression = resting ? "sleepy" : "focused"
 
+  const avatarRef = useRef<HTMLDivElement>(null)
+  const [scrolledPast, setScrolledPast] = useState(false)
+
+  useEffect(() => {
+    const el = avatarRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0, rootMargin: "-40% 0px 0px 0px" },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="relative">
+      <MiniTwin
+        visible={scrolledPast}
+        avatar={avatar}
+        outfit={outfit}
+        resting={resting}
+        expression={expression}
+        phaseColor={phase.color}
+        celebration={celebration}
+        colors={GOLD_DUST}
+        onReturn={() => avatarRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+      />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-[2rem] transition-colors duration-1000"
@@ -96,7 +125,7 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
         })}
       </div>
 
-      <div className="relative mx-auto mt-2 h-[320px] w-full max-w-[280px] md:h-[350px]">
+      <div ref={avatarRef} className="relative mx-auto mt-2 h-[320px] w-full max-w-[280px] md:h-[350px]">
         {!resting
           ? PARTICLES.map((p) => (
               <span

@@ -112,7 +112,7 @@ export function AppShell({ todayISO }: { todayISO: string }) {
 
   return (
     <div className="min-h-dvh">
-      <div data-preview-bar className="sticky top-0 z-40 bg-bar text-bar-foreground">
+      <div data-preview-bar className="relative z-40 bg-bar text-bar-foreground md:sticky md:top-0">
         <div className="mx-auto flex min-h-14 max-w-[1400px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-2 md:px-10">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <BarGroup label="Preview">

@@ -33,6 +33,7 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
   const [title, setTitle] = useState("")
   const [due, setDue] = useState(() => toISODate(addDays(today, 7)))
   const [effort, setEffort] = useState<Effort>("deep")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const scoped = tasks.filter((t) => t.scope === scope)
   const sorted = [...scoped].sort((a, b) => Number(a.done) - Number(b.done) || a.dueDate.localeCompare(b.dueDate))
@@ -107,10 +108,16 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
                   {task.done ? <Check className="size-3" aria-hidden /> : null}
                 </button>
               </span>
-              <div className="min-w-0 flex-1">
-                <p className={cn("truncate text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</p>
+              <button
+                type="button"
+                aria-expanded={selectedId === task.id}
+                aria-label={`${task.title}. Tap to show delete`}
+                onClick={() => setSelectedId((cur) => (cur === task.id ? null : task.id))}
+                className="min-w-0 flex-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className={cn("block truncate text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</span>
                 {daily ? null : (
-                <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{dueText(dueIn)}</span>
                   <span aria-hidden>·</span>
                   <span>{task.effort === "deep" ? "Deep focus" : "Light lift"}</span>
@@ -123,9 +130,9 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
                       </span>
                     </>
                   ) : null}
-                </p>
+                </span>
                 )}
-              </div>
+              </button>
               {!daily && task.plannedToday && !task.done ? (
                 <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-accent-foreground">
                   Today
@@ -133,11 +140,19 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
               ) : null}
               <button
                 type="button"
-                onClick={() => onRemove(task.id)}
+                onClick={() => {
+                  onRemove(task.id)
+                  setSelectedId(null)
+                }}
                 aria-label={`Delete ${task.title}`}
-                className="shrink-0 rounded-full p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selectedId === task.id
+                    ? "scale-100 bg-period text-period-foreground opacity-100"
+                    : "pointer-events-none scale-75 text-period opacity-0 md:group-hover:pointer-events-auto md:group-hover:scale-100 md:group-hover:opacity-100",
+                )}
               >
-                <X className="size-3.5" aria-hidden />
+                <X className="size-4" aria-hidden />
               </button>
             </li>
           )
