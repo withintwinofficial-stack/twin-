@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react"
 import { Check, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { addDays, diffDays, getPhase, parseISODate, toISODate, type Effort, type Task } from "@/lib/twin"
+import { Stardust } from "./stardust"
 
 interface Props {
   tasks: Task[]
@@ -12,6 +13,7 @@ interface Props {
   onToggle: (id: string, done: boolean) => void
   onAdd: (title: string, dueDate: string, effort: Effort) => void
   onRemove: (id: string) => void
+  sparkle?: { id: number; taskId: string } | null
 }
 
 function dueText(n: number) {
@@ -21,7 +23,7 @@ function dueText(n: number) {
   return `In ${n} days`
 }
 
-export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove }: Props) {
+export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sparkle }: Props) {
   const [title, setTitle] = useState("")
   const [due, setDue] = useState(() => toISODate(addDays(today, 7)))
   const [effort, setEffort] = useState<Effort>("deep")
@@ -53,19 +55,22 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove }: 
           const phaseAtDue = getPhase(cycleDay + Math.max(0, dueIn))
           return (
             <li key={task.id} className="group flex items-center gap-3 py-3">
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={task.done}
-                aria-label={`Mark ${task.title} as ${task.done ? "not done" : "done"}`}
-                onClick={() => onToggle(task.id, !task.done)}
-                className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  task.done ? "border-foreground bg-foreground text-background" : "border-foreground/40 hover:border-foreground",
-                )}
-              >
-                {task.done ? <Check className="size-3" aria-hidden /> : null}
-              </button>
+              <span className="relative shrink-0">
+                {sparkle?.taskId === task.id ? <Stardust key={sparkle.id} /> : null}
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={task.done}
+                  aria-label={`Mark ${task.title} as ${task.done ? "not done" : "done"}`}
+                  onClick={() => onToggle(task.id, !task.done)}
+                  className={cn(
+                    "flex size-5 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    task.done ? "border-phase-ovulatory bg-phase-ovulatory text-primary-foreground" : "border-foreground/40 hover:border-foreground",
+                  )}
+                >
+                  {task.done ? <Check className="size-3" aria-hidden /> : null}
+                </button>
+              </span>
               <div className="min-w-0 flex-1">
                 <p className={cn("truncate text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</p>
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">

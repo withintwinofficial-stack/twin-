@@ -14,6 +14,7 @@ export interface AvatarConfig {
   skin: number
   hair: HairStyle
   hairColor: number
+  style: StyleId
 }
 
 export type HairStyle = "bob" | "long" | "bun" | "curly"
@@ -265,45 +266,57 @@ export const HAIR_COLORS = [
   { name: "Copper", value: "#9C4F2E" },
 ]
 
-export const DEFAULT_AVATAR: AvatarConfig = { skin: 1, hair: "bob", hairColor: 0 }
+export type StyleId = "chic" | "sporty" | "street" | "business"
+
+export const WARDROBE_STYLES: { id: StyleId; name: string }[] = [
+  { id: "chic", name: "Chic" },
+  { id: "sporty", name: "Sporty" },
+  { id: "street", name: "Streetstyle" },
+  { id: "business", name: "Business Bae" },
+]
+
+export const DEFAULT_AVATAR: AvatarConfig = { skin: 1, hair: "bob", hairColor: 0, style: "chic" }
+
+export type OutfitKind = StyleId | "lounge"
+export type Expression = "focused" | "sleepy" | "asleep"
 
 export interface Outfit {
-  kind: "casual" | "active" | "lounge"
+  kind: OutfitKind
   label: string
   top: string
   bottom: string
   mood: string
 }
 
-export const OUTFITS: Record<PhaseId, Outfit> = {
-  follicular: {
-    kind: "casual",
-    label: "Chic casual · knit & wide-leg trousers",
-    top: "#E6DACA",
-    bottom: "#3A3530",
-    mood: "Light, curious and ready to start things.",
-  },
-  ovulatory: {
-    kind: "active",
-    label: "Activewear · sculpt set",
-    top: "#8A9679",
-    bottom: "#2E2A27",
-    mood: "Buzzing with energy — let's move.",
-  },
-  luteal: {
-    kind: "lounge",
-    label: "Loungewear · oat hoodie & sweats",
-    top: "#BBA999",
-    bottom: "#D9CEC1",
-    mood: "Slowing down with you. Rest counts.",
-  },
-  menstrual: {
-    kind: "lounge",
-    label: "Loungewear · rosewood hoodie & sweats",
-    top: "#A07F77",
-    bottom: "#D5C6BB",
-    mood: "Cozy, quiet, and gentle today.",
-  },
+const ACTIVE_OUTFITS: Record<StyleId, Omit<Outfit, "mood">> = {
+  chic: { kind: "chic", label: "Chic · knit & wide-leg trousers", top: "#E6DACA", bottom: "#3A3530" },
+  sporty: { kind: "sporty", label: "Sporty · sage sculpt set", top: "#8A9679", bottom: "#2E2A27" },
+  street: { kind: "street", label: "Streetstyle · oversized hoodie & cargos", top: "#3A3530", bottom: "#A99C8B" },
+  business: { kind: "business", label: "Business Bae · camel blazer & trousers", top: "#B08563", bottom: "#2E2A27" },
+}
+
+const LOUNGE_TONES: Record<StyleId, { top: string; bottom: string; name: string }> = {
+  chic: { top: "#BBA999", bottom: "#D9CEC1", name: "oat cashmere hoodie" },
+  sporty: { top: "#8E9983", bottom: "#D8D6C8", name: "sage fleece hoodie" },
+  street: { top: "#4A443E", bottom: "#CFC4B6", name: "charcoal oversized hoodie" },
+  business: { top: "#A07F77", bottom: "#D5C6BB", name: "rosewood knit hoodie" },
+}
+
+export function getOutfit(phase: Phase, style: StyleId, forceLounge = false): Outfit {
+  if (phase.energy === "low" || forceLounge) {
+    const tone = LOUNGE_TONES[style]
+    return {
+      kind: "lounge",
+      label: `Loungewear · ${tone.name} & sweats`,
+      top: tone.top,
+      bottom: tone.bottom,
+      mood: forceLounge ? "Day's done. Nothing else is owed." : phase.id === "menstrual" ? "Cozy, quiet, and gentle today." : "Slowing down with you. Rest counts.",
+    }
+  }
+  return {
+    ...ACTIVE_OUTFITS[style],
+    mood: phase.id === "ovulatory" ? "Buzzing with energy. Let's go." : "Light, curious and ready to start things.",
+  }
 }
 
 export const QUOTES = [

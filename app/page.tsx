@@ -1,8 +1,8 @@
 import { connection } from "next/server"
-import { Dashboard } from "@/components/twin/dashboard"
+import { AppShell } from "@/components/twin/app-shell"
 import { toISODate } from "@/lib/twin"
 
 export default async function Page() {
   await connection()
-  return <Dashboard todayISO={toISODate(new Date())} />
+  return <AppShell todayISO={toISODate(new Date())} />
 }

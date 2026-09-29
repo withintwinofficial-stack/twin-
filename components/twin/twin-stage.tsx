@@ -1,5 +1,5 @@
-import { Moon, Sparkles } from "lucide-react"
-import { energyScore, OUTFITS, type AvatarConfig, type Phase } from "@/lib/twin"
+import { Moon, Sparkles, Sunset } from "lucide-react"
+import { energyScore, getOutfit, WARDROBE_STYLES, type AvatarConfig, type Phase } from "@/lib/twin"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TwinAvatar } from "./twin-avatar"
@@ -8,6 +8,7 @@ import { CelebrationBurst } from "./celebration-burst"
 
 export interface Celebration {
   id: number
+  taskId: string
   title: string
 }
 
@@ -19,6 +20,8 @@ const PARTICLES = [
   { left: "50%", top: "10%", size: 3, delay: "2.2s" },
 ]
 
+const GOLD_DUST = ["var(--phase-ovulatory)", "#d9bd86", "#f1e3c2", "#a8834a"]
+
 interface TwinStageProps {
   avatar: AvatarConfig
   phase: Phase
@@ -26,19 +29,21 @@ interface TwinStageProps {
   doneCount: number
   totalCount: number
   celebration: Celebration | null
+  evening?: boolean
   onAvatarChange: (v: AvatarConfig) => void
 }
 
-export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, onAvatarChange }: TwinStageProps) {
-  const outfit = OUTFITS[phase.id]
+export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, celebration, evening = false, onAvatarChange }: TwinStageProps) {
+  const outfit = getOutfit(phase, avatar.style, evening)
   const resting = outfit.kind === "lounge"
   const energy = energyScore(cycleDay)
+  const expression = resting ? "sleepy" : "focused"
 
   return (
     <div className="relative">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0 rounded-[2rem] transition-colors duration-1000"
+        className="pointer-events-none absolute inset-0 rounded-[2rem] transition-colors duration-1000"
         style={{
           background: `radial-gradient(60% 55% at 50% 45%, color-mix(in oklab, ${phase.color} 22%, transparent), transparent 70%)`,
         }}
@@ -47,12 +52,33 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
       <div className="relative flex items-center justify-between px-1">
         <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Your Twin</p>
         <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          {resting ? <Moon className="size-3" aria-hidden /> : <Sparkles className="size-3" aria-hidden />}
-          {resting ? "Resting mode" : "Energized mode"}
+          {evening ? <Sunset className="size-3" aria-hidden /> : resting ? <Moon className="size-3" aria-hidden /> : <Sparkles className="size-3" aria-hidden />}
+          {evening ? "Sunset mode" : resting ? "Resting mode" : "Focused mode"}
         </p>
       </div>
 
-      <div className="relative mx-auto mt-2 h-[340px] w-full max-w-[300px] md:h-[380px]">
+      <div role="tablist" aria-label="Wardrobe style" className="relative mt-4 grid grid-cols-4 gap-1 rounded-full border border-border bg-card/60 p-1 backdrop-blur-sm">
+        {WARDROBE_STYLES.map((s) => {
+          const selected = avatar.style === s.id
+          return (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => onAvatarChange({ ...avatar, style: s.id })}
+              className={cn(
+                "truncate rounded-full px-1 py-1.5 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                selected ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {s.name}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="relative mx-auto mt-2 h-[320px] w-full max-w-[280px] md:h-[350px]">
         {!resting
           ? PARTICLES.map((p) => (
               <span
@@ -66,7 +92,7 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
 
         {celebration ? (
           <>
-            <CelebrationBurst key={`burst-${celebration.id}`} colors={[phase.color, "#2a2622", "#c9a27e", "#e8dccb"]} />
+            <CelebrationBurst key={`burst-${celebration.id}`} colors={GOLD_DUST} />
             <p
               key={`toast-${celebration.id}`}
               className="absolute inset-x-0 top-0 z-20 mx-auto w-fit max-w-[90%] truncate rounded-full border border-border bg-card/90 px-4 py-1.5 text-center text-xs shadow-sm backdrop-blur-sm motion-safe:animate-twin-toast"
@@ -78,37 +104,34 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
 
         <Popover>
           <PopoverTrigger
-            aria-label="Customize your Twin"
+            aria-label="Customize your Twin's hair and skin"
             className="group absolute inset-0 cursor-pointer rounded-[2rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-              <div key={outfit.kind + phase.id} className="absolute inset-0 animate-in fade-in zoom-in-95 duration-700">
-                <div
-                  key={celebration?.id ?? "idle"}
-                  className={cn(
-                    "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.02]",
-                    celebration && (resting ? "motion-safe:animate-twin-wiggle" : "motion-safe:animate-twin-hop"),
-                  )}
-                  style={{ transformOrigin: "50% 90%" }}
-                >
-                  {resting ? (
-                    <TwinAvatar config={avatar} outfit={outfit} />
-                  ) : (
-                    <>
-                      <div className="absolute inset-x-0 top-0 bottom-6 motion-safe:animate-twin-float">
-                        <TwinAvatar config={avatar} outfit={outfit} />
-                      </div>
-                      <div
-                        aria-hidden
-                        className="absolute bottom-2 left-1/2 h-3 w-28 -translate-x-1/2 motion-safe:animate-twin-shadow"
-                      >
-                        <div className="h-full w-full rounded-[50%] bg-foreground/15 blur-[3px]" />
-                      </div>
-                    </>
-                  )}
-                </div>
+            <div key={outfit.kind + phase.id + String(evening)} className="absolute inset-0 animate-in fade-in zoom-in-95 duration-700">
+              <div
+                key={celebration?.id ?? "idle"}
+                className={cn(
+                  "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.02]",
+                  celebration && (resting ? "motion-safe:animate-twin-wiggle" : "motion-safe:animate-twin-hop"),
+                )}
+                style={{ transformOrigin: "50% 90%" }}
+              >
+                {resting ? (
+                  <TwinAvatar config={avatar} outfit={outfit} pose="seated" expression={expression} />
+                ) : (
+                  <>
+                    <div className="absolute inset-x-0 top-0 bottom-6 motion-safe:animate-twin-float">
+                      <TwinAvatar config={avatar} outfit={outfit} pose="standing" expression={expression} />
+                    </div>
+                    <div aria-hidden className="absolute bottom-2 left-1/2 h-3 w-28 -translate-x-1/2 motion-safe:animate-twin-shadow">
+                      <div className="h-full w-full rounded-[50%] bg-foreground/15 blur-[3px]" />
+                    </div>
+                  </>
+                )}
               </div>
+            </div>
           </PopoverTrigger>
-          <PopoverContent side="bottom" align="center" sideOffset={-24} className="w-80 rounded-2xl p-6">
+          <PopoverContent side="right" align="center" sideOffset={8} className="w-80 rounded-2xl p-6">
             <AvatarCustomizer value={avatar} onChange={onAvatarChange} />
           </PopoverContent>
         </Popover>
@@ -118,30 +141,34 @@ export function TwinStage({ avatar, phase, cycleDay, doneCount, totalCount, cele
         {celebration ? `Nice work. ${celebration.title} is done.` : ""}
       </p>
 
-      <div className="relative mt-4 text-center">
+      <div className="relative mt-3 text-center">
         <p className="font-serif text-2xl italic text-balance">&ldquo;{outfit.mood}&rdquo;</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Wearing: {outfit.label} <span aria-hidden>&middot;</span> Tap your Twin to restyle
+          Wearing: {outfit.label}
+          {resting && !evening ? " (your style returns on high-energy days)" : ""} <span aria-hidden>&middot;</span> Tap your Twin to
+          restyle
         </p>
       </div>
 
-      <dl className="relative mt-6 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card/70 py-3 text-center backdrop-blur-sm">
-        <div>
-          <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Energy</dt>
-          <dd className="mt-0.5 font-serif text-xl">{energy}%</dd>
-        </div>
-        <div>
-          <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Mood</dt>
-          <dd className="mt-0.5 font-serif text-xl">{resting ? "Cozy" : "Bright"}</dd>
-        </div>
-        <div>
-          <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Done</dt>
-          <dd className="mt-0.5 font-serif text-xl">
-            {doneCount}
-            <span className="text-sm text-muted-foreground">/{totalCount}</span>
-          </dd>
-        </div>
-      </dl>
+      {!evening ? (
+        <dl className="relative mt-5 grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card/70 py-3 text-center backdrop-blur-sm">
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Energy</dt>
+            <dd className="mt-0.5 font-serif text-xl">{energy}%</dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Mood</dt>
+            <dd className="mt-0.5 font-serif text-xl">{resting ? "Cozy" : "Focused"}</dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Done</dt>
+            <dd className="mt-0.5 font-serif text-xl">
+              {doneCount}
+              <span className="text-sm text-muted-foreground">/{totalCount}</span>
+            </dd>
+          </div>
+        </dl>
+      ) : null}
     </div>
   )
 }

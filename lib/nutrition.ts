@@ -102,6 +102,29 @@ export const NUTRITION_WINDOWS: NutritionWindow[] = [
   },
 ]
 
+export const HERBS: Record<string, { name: string; why: string }[]> = {
+  replenish: [
+    { name: "Ginger", why: "Eases cramps" },
+    { name: "Raspberry leaf tea", why: "Soothes the uterus" },
+  ],
+  build: [
+    { name: "Nettle tea", why: "Mineral-rich, gentle iron" },
+    { name: "Green tea", why: "Calm, steady focus" },
+  ],
+  clear: [
+    { name: "Turmeric", why: "Anti-inflammatory" },
+    { name: "Parsley", why: "Vitamin C and a light detox" },
+  ],
+  steady: [
+    { name: "Cinnamon", why: "Helps even out blood sugar" },
+    { name: "Peppermint tea", why: "Settles bloating" },
+  ],
+  stockup: [
+    { name: "Chamomile", why: "Calms PMS anxiety" },
+    { name: "Ginger", why: "Gets ahead of cramps" },
+  ],
+}
+
 export function getNutritionWindow(day: number) {
   const d = normalizeDay(day)
   return NUTRITION_WINDOWS.find((w) => d >= w.start && d <= w.end) ?? NUTRITION_WINDOWS[0]
