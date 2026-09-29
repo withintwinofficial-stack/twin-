@@ -1,16 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { createDefaultProfile, DEFAULT_AVATAR, parseISODate, type AvatarConfig, type CycleProfile } from "@/lib/twin"
 import { Dashboard, type TimeMode } from "./dashboard"
 import { LoginScreen } from "./login-screen"
 import { TrialScreen } from "./trial-screen"
+import { AlignTwinDialog } from "./align-twin-dialog"
 
 type View = "login" | "trial" | "sandbox"
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "login", label: "Login" },
-  { id: "trial", label: "Trial" },
+  { id: "trial", label: "Plans" },
   { id: "sandbox", label: "Sandbox" },
 ]
 
@@ -42,8 +44,26 @@ function Segmented<T extends string>({ label, options, value, onChange }: { labe
 }
 
 export function AppShell({ todayISO }: { todayISO: string }) {
+  const today = useMemo(() => parseISODate(todayISO), [todayISO])
   const [view, setView] = useState<View>("sandbox")
   const [timeMode, setTimeMode] = useState<TimeMode>("day")
+  const [profile, setProfile] = useState<CycleProfile>(() => createDefaultProfile(today))
+  const [avatar, setAvatar] = useState<AvatarConfig>(DEFAULT_AVATAR)
+  const [aligning, setAligning] = useState(false)
+  const [alignKey, setAlignKey] = useState(0)
+
+  const startAlign = () => {
+    setAlignKey((k) => k + 1)
+    setAligning(true)
+  }
+
+  const finishAlign = (p: CycleProfile, a: AvatarConfig) => {
+    setProfile(p)
+    setAvatar(a)
+    setAligning(false)
+    setTimeMode("day")
+    setView("sandbox")
+  }
 
   return (
     <div className="min-h-dvh bg-background">
@@ -63,8 +83,20 @@ export function AppShell({ todayISO }: { todayISO: string }) {
       </div>
 
       {view === "login" ? <LoginScreen onTrial={() => setView("trial")} onEnter={() => setView("sandbox")} /> : null}
-      {view === "trial" ? <TrialScreen todayISO={todayISO} onStart={() => setView("sandbox")} onBack={() => setView("login")} /> : null}
-      {view === "sandbox" ? <Dashboard todayISO={todayISO} timeMode={timeMode} onTimeModeChange={setTimeMode} /> : null}
+      {view === "trial" ? <TrialScreen todayISO={todayISO} onStart={startAlign} onBack={() => setView("login")} /> : null}
+      {view === "sandbox" ? (
+        <Dashboard
+          todayISO={todayISO}
+          timeMode={timeMode}
+          onTimeModeChange={setTimeMode}
+          profile={profile}
+          onProfileChange={setProfile}
+          avatar={avatar}
+          onAvatarChange={setAvatar}
+        />
+      ) : null}
+
+      <AlignTwinDialog key={alignKey} open={aligning} today={today} initialProfile={profile} initialAvatar={avatar} onComplete={finishAlign} />
     </div>
   )
 }

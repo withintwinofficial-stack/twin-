@@ -1,5 +1,6 @@
 export type PhaseId = "menstrual" | "follicular" | "ovulatory" | "luteal"
 export type Effort = "light" | "deep"
+export type TaskScope = "monthly" | "daily"
 
 export interface Task {
   id: string
@@ -8,7 +9,16 @@ export interface Task {
   effort: Effort
   done: boolean
   plannedToday: boolean
+  scope: TaskScope
 }
+
+export interface CycleProfile {
+  lastPeriodStart: string
+  cycleLength: number
+  periodLength: number
+}
+
+export type DayMarker = "period-start" | "period" | "ovulation" | "fertile" | null
 
 export interface AvatarConfig {
   skin: number
@@ -135,13 +145,62 @@ export function diffDays(from: Date, to: Date) {
 
 export function createSeedTasks(today: Date): Task[] {
   const due = (n: number) => toISODate(addDays(today, n))
+  const m = { done: false, plannedToday: false, scope: "monthly" as const }
+  const d = { effort: "light" as const, dueDate: due(0), plannedToday: true, scope: "daily" as const }
   return [
-    { id: "t1", title: "Quarterly tax filing", dueDate: due(10), effort: "deep", done: false, plannedToday: false },
-    { id: "t2", title: "Grant proposal draft", dueDate: due(6), effort: "deep", done: false, plannedToday: false },
-    { id: "t3", title: "Reply to landlord email", dueDate: due(1), effort: "light", done: false, plannedToday: false },
-    { id: "t4", title: "Book dentist appointment", dueDate: due(3), effort: "light", done: true, plannedToday: false },
-    { id: "t5", title: "Portfolio refresh", dueDate: due(18), effort: "deep", done: false, plannedToday: false },
+    { ...m, id: "t1", title: "Quarterly tax filing", dueDate: due(10), effort: "deep" },
+    { ...m, id: "t2", title: "Grant proposal draft", dueDate: due(6), effort: "deep" },
+    { ...m, id: "t3", title: "Reply to landlord email", dueDate: due(1), effort: "light" },
+    { ...m, id: "t4", title: "Book dentist appointment", dueDate: due(3), effort: "light", done: true },
+    { ...m, id: "t5", title: "Portfolio refresh", dueDate: due(18), effort: "deep" },
+    { ...d, id: "d1", title: "Water before coffee", done: true },
+    { ...d, id: "d2", title: "15-minute inbox sweep", done: false },
+    { ...d, id: "d3", title: "Take vitamins with breakfast", done: false },
   ]
+}
+
+/* ---------- Personal cycle profile ---------- */
+
+export const DEFAULT_PROFILE_LENGTH = 28
+
+export function createDefaultProfile(today: Date): CycleProfile {
+  return { lastPeriodStart: toISODate(addDays(today, -11)), cycleLength: 28, periodLength: 5 }
+}
+
+export function actualCycleDay(profile: CycleProfile, date: Date) {
+  const L = profile.cycleLength
+  const diff = diffDays(parseISODate(profile.lastPeriodStart), date)
+  return (((diff % L) + L) % L) + 1
+}
+
+export function ovulationDay(cycleLength: number) {
+  return cycleLength - 14
+}
+
+/** Maps a personal cycle day onto Twin's 28-day hormone model. The luteal phase is ~14 days
+ * regardless of cycle length, so only the follicular stretch is scaled. */
+export function toModelDay(day: number, cycleLength: number) {
+  if (cycleLength === CYCLE_LENGTH || day <= 5) return Math.min(day, CYCLE_LENGTH)
+  const lutealStart = cycleLength - 11
+  if (day >= lutealStart) return Math.min(CYCLE_LENGTH, 17 + (day - lutealStart))
+  const span = Math.max(1, lutealStart - 1 - 6)
+  return Math.round(6 + ((day - 6) * 10) / span)
+}
+
+export function dayMarker(day: number, profile: CycleProfile): DayMarker {
+  if (day === 1) return "period-start"
+  if (day <= profile.periodLength) return "period"
+  const ov = ovulationDay(profile.cycleLength)
+  if (day === ov) return "ovulation"
+  if (day >= ov - 5 && day <= ov + 1) return "fertile"
+  return null
+}
+
+export const MARKER_LABELS: Record<Exclude<DayMarker, null>, string> = {
+  "period-start": "Period starts",
+  period: "Period",
+  ovulation: "Ovulation (estimated)",
+  fertile: "Fertile window",
 }
 
 /* ---------- Hormone-aware reminder engine ---------- */
@@ -179,7 +238,7 @@ export function generateBioReminders(tasks: Task[], cycleDay: number, today: Dat
   const current = getPhase(cycleDay)
 
   return tasks
-    .filter((t) => !t.done)
+    .filter((t) => !t.done && t.scope === "monthly")
     .map((task): BioReminder => {
       const dueIn = diffDays(today, parseISODate(task.dueDate))
       const phaseAtDue = getPhase(cycleDay + Math.max(0, dueIn))
@@ -289,10 +348,10 @@ export interface Outfit {
 }
 
 const ACTIVE_OUTFITS: Record<StyleId, Omit<Outfit, "mood">> = {
-  chic: { kind: "chic", label: "Chic · knit & wide-leg trousers", top: "#E6DACA", bottom: "#3A3530" },
-  sporty: { kind: "sporty", label: "Sporty · sage sculpt set", top: "#8A9679", bottom: "#2E2A27" },
-  street: { kind: "street", label: "Streetstyle · oversized hoodie & cargos", top: "#3A3530", bottom: "#A99C8B" },
-  business: { kind: "business", label: "Business Bae · camel blazer & trousers", top: "#B08563", bottom: "#2E2A27" },
+  chic: { kind: "chic", label: "Chic · fitted tee, blush tulle skirt & mauve heels", top: "#EFE7DC", bottom: "#D8BDB1" },
+  sporty: { kind: "sporty", label: "Sporty · sage crop, flared leggings & a jacket tied at the waist", top: "#8A9679", bottom: "#3A3530" },
+  street: { kind: "street", label: "Streetstyle · cropped leather jacket & baggy cargos", top: "#4A3F38", bottom: "#BDAF9C" },
+  business: { kind: "business", label: "Business Bae · belted camel blazer, mini skirt & pumps", top: "#B08563", bottom: "#2E2A27" },
 }
 
 const LOUNGE_TONES: Record<StyleId, { top: string; bottom: string; name: string }> = {

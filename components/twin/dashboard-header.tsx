@@ -1,6 +1,6 @@
 import { CYCLE_LENGTH, energyScore, type Phase } from "@/lib/twin"
 
-export function DashboardHeader({ today, cycleDay, phase, evening = false }: { today: Date; cycleDay: number; phase: Phase; evening?: boolean }) {
+export function DashboardHeader({ today, cycleDay, energyDay = cycleDay, phase, evening = false }: { today: Date; cycleDay: number; energyDay?: number; phase: Phase; evening?: boolean }) {
   const dateLabel = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
   const hour = new Date().getHours()
   const greeting = evening ? "Good evening" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
@@ -36,7 +36,7 @@ export function DashboardHeader({ today, cycleDay, phase, evening = false }: { t
         </div>
         <div className="pl-5">
           <dt className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Energy</dt>
-          <dd className="mt-1 font-serif text-2xl">{energyScore(cycleDay)}%</dd>
+          <dd className="mt-1 font-serif text-2xl">{energyScore(energyDay)}%</dd>
         </div>
       </dl>
     </header>

@@ -18,17 +18,19 @@ function Swatch({ color, name, selected, onClick }: { color: string; name: strin
   )
 }
 
-export function AvatarCustomizer({ value, onChange }: { value: AvatarConfig; onChange: (v: AvatarConfig) => void }) {
+export function AvatarCustomizer({ value, onChange, showHeading = true }: { value: AvatarConfig; onChange: (v: AvatarConfig) => void; showHeading?: boolean }) {
   return (
-    <section aria-labelledby="customize-heading">
-      <div className="flex flex-col gap-1">
-        <h2 id="customize-heading" className="font-serif text-xl">
-          Style your Twin
-        </h2>
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Wardrobe follows your cycle</p>
-      </div>
+    <section aria-labelledby={showHeading ? "customize-heading" : undefined} aria-label={showHeading ? undefined : "Twin appearance"}>
+      {showHeading ? (
+        <div className="mb-5 flex flex-col gap-1">
+          <h2 id="customize-heading" className="font-serif text-xl">
+            Style your Twin
+          </h2>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Wardrobe follows your cycle</p>
+        </div>
+      ) : null}
 
-      <div className="mt-5 flex flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <fieldset className="flex items-center justify-between gap-4">
           <legend className="sr-only">Skin tone</legend>
           <span aria-hidden className="text-xs text-muted-foreground">Skin</span>

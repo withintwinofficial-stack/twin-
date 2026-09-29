@@ -2,14 +2,19 @@
 
 import { useMemo, useRef, useState } from "react"
 import {
+  actualCycleDay,
+  addDays,
   createSeedTasks,
-  DEFAULT_AVATAR,
   generateBioReminders,
   getPhase,
   parseISODate,
+  toISODate,
+  toModelDay,
   type AvatarConfig,
+  type CycleProfile,
   type Effort,
   type Task,
+  type TaskScope,
 } from "@/lib/twin"
 import { DashboardHeader } from "./dashboard-header"
 import { QuoteCard } from "./quote-card"
@@ -28,11 +33,22 @@ import { EveningRelease } from "./evening-release"
 
 export type TimeMode = "morning" | "day" | "evening"
 
-export function Dashboard({ todayISO, timeMode, onTimeModeChange }: { todayISO: string; timeMode: TimeMode; onTimeModeChange: (m: TimeMode) => void }) {
+interface DashboardProps {
+  todayISO: string
+  timeMode: TimeMode
+  onTimeModeChange: (m: TimeMode) => void
+  profile: CycleProfile
+  onProfileChange: (p: CycleProfile) => void
+  avatar: AvatarConfig
+  onAvatarChange: (a: AvatarConfig) => void
+}
+
+export function Dashboard({ todayISO, timeMode, onTimeModeChange, profile, onProfileChange, avatar, onAvatarChange: setAvatar }: DashboardProps) {
   const today = useMemo(() => parseISODate(todayISO), [todayISO])
   const [tasks, setTasks] = useState<Task[]>(() => createSeedTasks(today))
-  const [cycleDay, setCycleDay] = useState(12)
-  const [avatar, setAvatar] = useState<AvatarConfig>(DEFAULT_AVATAR)
+  const actualDay = actualCycleDay(profile, today)
+  const cycleDay = toModelDay(actualDay, profile.cycleLength)
+  const setActualDay = (day: number) => onProfileChange({ ...profile, lastPeriodStart: toISODate(addDays(today, -(day - 1))) })
   const [releasedIds, setReleasedIds] = useState<string[]>([])
 
   const phase = getPhase(cycleDay)
@@ -41,8 +57,8 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange }: { todayISO: 
   const updateTask = (id: string, patch: Partial<Task>) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
 
-  const addTask = (title: string, dueDate: string, effort: Effort) =>
-    setTasks((prev) => [...prev, { id: crypto.randomUUID(), title, dueDate, effort, done: false, plannedToday: false }])
+  const addTask = (title: string, dueDate: string, effort: Effort, scope: TaskScope) =>
+    setTasks((prev) => [...prev, { id: crypto.randomUUID(), title, dueDate, effort, scope, done: false, plannedToday: scope === "daily" }])
 
   const [celebration, setCelebration] = useState<Celebration | null>(null)
   const celebrationTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -79,7 +95,7 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange }: { todayISO: 
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto max-w-[1400px] px-5 py-6 md:px-10 md:py-10">
-        <DashboardHeader today={today} cycleDay={cycleDay} phase={phase} evening={evening} />
+        <DashboardHeader today={today} cycleDay={actualDay} energyDay={cycleDay} phase={phase} evening={evening} />
 
         {!evening ? <QuoteCard today={today} /> : null}
 
@@ -133,7 +149,7 @@ export function Dashboard({ todayISO, timeMode, onTimeModeChange }: { todayISO: 
                   />
                   <div className="flex flex-col gap-6">
                     <PhaseOverview cycleDay={cycleDay} phase={phase} />
-                    <CycleCalendar today={today} cycleDay={cycleDay} tasks={tasks} onCycleDayChange={setCycleDay} />
+                    <CycleCalendar today={today} profile={profile} tasks={tasks} onCycleDayChange={setActualDay} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

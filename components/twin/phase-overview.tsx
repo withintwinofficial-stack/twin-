@@ -1,4 +1,7 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react"
+"use client"
+
+import { useState } from "react"
+import { ArrowDownRight, ArrowRight, ArrowUpRight, X } from "lucide-react"
 import { CYCLE_LENGTH, hormones, PHASES, type Phase } from "@/lib/twin"
 
 const W = 280
@@ -62,6 +65,11 @@ function reading(fn: (d: number) => number, day: number) {
 const TREND_ICON = { rising: ArrowUpRight, falling: ArrowDownRight, steady: ArrowRight }
 
 export function PhaseOverview({ cycleDay, phase }: { cycleDay: number; phase: Phase }) {
+  const [active, setActive] = useState<string | null>(null)
+  const toggle = (key: string) => setActive((cur) => (cur === key ? null : key))
+  const selected = LINES.find((l) => l.key === active) ?? null
+  const selectedReading = selected ? reading(selected.fn, cycleDay) : null
+  const SelectedIcon = selectedReading ? TREND_ICON[selectedReading.trend as keyof typeof TREND_ICON] : null
   const markerX = xFor(cycleDay)
   const labelAnchor = cycleDay < 5 ? "start" : cycleDay > CYCLE_LENGTH - 4 ? "end" : "middle"
 
@@ -111,17 +119,45 @@ export function PhaseOverview({ cycleDay, phase }: { cycleDay: number; phase: Ph
             )
           })}
 
-          {LINES.map((l) => (
-            <path key={l.key} d={l.d} fill="none" stroke={l.stroke} strokeWidth={1.4} strokeDasharray={l.dash} strokeLinecap="round" />
-          ))}
-
           <line x1={markerX} x2={markerX} y1={TOP - 2} y2={BOTTOM} stroke="var(--foreground)" strokeWidth={0.8} strokeDasharray="2 3" opacity={0.5} />
           <text x={markerX} y={TOP - 6} fontSize={7} textAnchor={labelAnchor} fill="var(--foreground)" fontWeight={600}>
             Today · Day {cycleDay}
           </text>
-          {LINES.map((l) => (
-            <circle key={l.key} cx={markerX} cy={yFor(l.fn(cycleDay))} r={2.8} fill="var(--card)" stroke={l.stroke} strokeWidth={1.3} />
-          ))}
+
+          {LINES.map((l) => {
+            const isActive = active === l.key
+            const dimmed = active !== null && !isActive
+            return (
+              <g
+                key={l.key}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isActive}
+                aria-label={`${l.key} line`}
+                onClick={() => toggle(l.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    toggle(l.key)
+                  }
+                }}
+                className="cursor-pointer outline-none [&:focus-visible>path:nth-child(2)]:stroke-[2.6]"
+                style={{ opacity: dimmed ? 0.25 : 1, transition: "opacity 300ms" }}
+              >
+                <path d={l.d} fill="none" stroke="transparent" strokeWidth={12} strokeLinecap="round" />
+                <path
+                  d={l.d}
+                  fill="none"
+                  stroke={l.stroke}
+                  strokeWidth={isActive ? 2.4 : 1.4}
+                  strokeDasharray={l.dash}
+                  strokeLinecap="round"
+                  style={{ transition: "stroke-width 200ms" }}
+                />
+                <circle cx={markerX} cy={yFor(l.fn(cycleDay))} r={isActive ? 3.6 : 2.8} fill="var(--card)" stroke={l.stroke} strokeWidth={1.3} />
+              </g>
+            )
+          })}
         </svg>
 
         <div className="mt-1.5 flex text-[10px] text-muted-foreground" style={{ paddingLeft: `${(LEFT / W) * 100}%`, paddingRight: `${(4 / W) * 100}%` }} aria-hidden>
@@ -136,33 +172,33 @@ export function PhaseOverview({ cycleDay, phase }: { cycleDay: number; phase: Ph
           ))}
         </div>
 
-        <figcaption className="mt-5">
-          <p className="sr-only">Key and today&apos;s readings</p>
-          <ul className="flex flex-col divide-y divide-border border-y border-border">
-            {LINES.map((l) => {
-              const r = reading(l.fn, cycleDay)
-              const Icon = TREND_ICON[r.trend as keyof typeof TREND_ICON]
-              return (
-                <li key={l.key} className="flex items-center gap-3 py-2.5">
-                  <svg width="18" height="6" aria-hidden className="shrink-0">
-                    <line x1="0" x2="18" y1="3" y2="3" stroke={l.stroke} strokeWidth="2" strokeDasharray={l.dash} strokeLinecap="round" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-tight">{l.key}</p>
-                    <p className="text-xs text-muted-foreground">{l.role}</p>
-                  </div>
-                  <p className="flex shrink-0 items-center gap-1 text-xs">
-                    <span className="font-medium">{r.level}</span>
-                    <Icon className="size-3.5 text-muted-foreground" aria-hidden />
-                    <span className="sr-only">and {r.trend}</span>
-                  </p>
-                </li>
-              )
-            })}
-          </ul>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            Lines show how each hormone typically rises and falls. Dots mark where you are today.
-          </p>
+        <figcaption className="mt-4" aria-live="polite">
+          {selected ? (
+            <div key={selected.key} className="flex items-start gap-3 rounded-xl bg-secondary px-4 py-3 animate-in fade-in slide-in-from-top-1 duration-300">
+              <svg width="18" height="6" aria-hidden className="mt-2 shrink-0">
+                <line x1="0" x2="18" y1="3" y2="3" stroke={selected.stroke} strokeWidth="2" strokeDasharray={selected.dash} strokeLinecap="round" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium leading-tight">{selected.key}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{selected.role}</p>
+                <p className="mt-2 flex items-center gap-1 text-xs">
+                  Today: <span className="font-medium">{selectedReading?.level}</span>
+                  {SelectedIcon ? <SelectedIcon className="size-3.5 text-muted-foreground" aria-hidden /> : null}
+                  <span className="text-muted-foreground">and {selectedReading?.trend}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActive(null)}
+                aria-label="Close hormone details"
+                className="rounded-full p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">Tap a line to see which hormone it is.</p>
+          )}
         </figcaption>
       </figure>
     </section>

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react"
 import { Check, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { addDays, diffDays, getPhase, parseISODate, toISODate, type Effort, type Task } from "@/lib/twin"
+import { addDays, diffDays, getPhase, parseISODate, toISODate, type Effort, type Task, type TaskScope } from "@/lib/twin"
 import { Stardust } from "./stardust"
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
   today: Date
   cycleDay: number
   onToggle: (id: string, done: boolean) => void
-  onAdd: (title: string, dueDate: string, effort: Effort) => void
+  onAdd: (title: string, dueDate: string, effort: Effort, scope: TaskScope) => void
   onRemove: (id: string) => void
   sparkle?: { id: number; taskId: string } | null
 }
@@ -23,33 +23,69 @@ function dueText(n: number) {
   return `In ${n} days`
 }
 
+const SCOPES: { id: TaskScope; label: string; hint: string }[] = [
+  { id: "daily", label: "Today", hint: "Small things for today. They reset tonight." },
+  { id: "monthly", label: "This month", hint: "Deadlines Twin times around your cycle." },
+]
+
 export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sparkle }: Props) {
+  const [scope, setScope] = useState<TaskScope>("daily")
   const [title, setTitle] = useState("")
   const [due, setDue] = useState(() => toISODate(addDays(today, 7)))
   const [effort, setEffort] = useState<Effort>("deep")
 
-  const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done) || a.dueDate.localeCompare(b.dueDate))
+  const scoped = tasks.filter((t) => t.scope === scope)
+  const sorted = [...scoped].sort((a, b) => Number(a.done) - Number(b.done) || a.dueDate.localeCompare(b.dueDate))
+  const daily = scope === "daily"
+  const current = SCOPES.find((s) => s.id === scope)!
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     const clean = title.trim()
-    if (!clean || !due) return
-    onAdd(clean.slice(0, 80), due, effort)
+    if (!clean) return
+    if (daily) onAdd(clean.slice(0, 80), toISODate(today), "light", "daily")
+    else if (due) onAdd(clean.slice(0, 80), due, effort, "monthly")
     setTitle("")
   }
 
   return (
     <section aria-labelledby="tasks-heading" className="flex flex-col rounded-2xl border border-border bg-card p-6">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 id="tasks-heading" className="font-serif text-2xl">
-          Tasks
+          To-dos
         </h2>
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          {tasks.filter((t) => !t.done).length} open
-        </p>
+        <div role="tablist" aria-label="Task list" className="flex rounded-full border border-border p-0.5">
+          {SCOPES.map((s) => {
+            const open = tasks.filter((t) => t.scope === s.id && !t.done).length
+            return (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={scope === s.id}
+                aria-controls="task-panel"
+                onClick={() => setScope(s.id)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  scope === s.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {s.label}
+                <span className={cn("tabular-nums", scope === s.id ? "text-primary-foreground/70" : "text-muted-foreground/70")}>{open}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
+      <p className="mt-1.5 text-xs text-muted-foreground">{current.hint}</p>
 
-      <ul className="mt-4 flex flex-col divide-y divide-border">
+      <div id="task-panel" role="tabpanel" aria-label={current.label} className="flex flex-1 flex-col">
+      {sorted.length === 0 ? (
+        <p className="mt-6 py-6 text-center font-serif text-lg italic text-muted-foreground">
+          {daily ? "Nothing yet. Add one small win." : "No deadlines. Enjoy the space."}
+        </p>
+      ) : null}
+      <ul className="mt-3 flex flex-col divide-y divide-border">
         {sorted.map((task) => {
           const dueIn = diffDays(today, parseISODate(task.dueDate))
           const phaseAtDue = getPhase(cycleDay + Math.max(0, dueIn))
@@ -73,6 +109,7 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
               </span>
               <div className="min-w-0 flex-1">
                 <p className={cn("truncate text-sm", task.done && "text-muted-foreground line-through")}>{task.title}</p>
+                {daily ? null : (
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{dueText(dueIn)}</span>
                   <span aria-hidden>·</span>
@@ -87,8 +124,9 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
                     </>
                   ) : null}
                 </p>
+                )}
               </div>
-              {task.plannedToday && !task.done ? (
+              {!daily && task.plannedToday && !task.done ? (
                 <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-accent-foreground">
                   Today
                 </span>
@@ -106,18 +144,33 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
         })}
       </ul>
 
+      </div>
+
       <form onSubmit={submit} className="mt-auto flex flex-col gap-3 border-t border-border pt-5">
         <label htmlFor="task-title" className="sr-only">
-          New task
+          {daily ? "New task for today" : "New monthly task"}
         </label>
-        <input
-          id="task-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add a task — Twin will time it for you"
-          maxLength={80}
-          className="w-full border-b border-border bg-transparent pb-2 text-sm placeholder:text-muted-foreground focus:border-foreground focus:outline-none"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            id="task-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={daily ? "Add something for today" : "Add a deadline and Twin will time it"}
+            maxLength={80}
+            className="min-w-0 flex-1 border-b border-border bg-transparent pb-2 text-sm placeholder:text-muted-foreground focus:border-foreground focus:outline-none"
+          />
+          {daily ? (
+            <button
+              type="submit"
+              aria-label="Add task"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+              disabled={!title.trim()}
+            >
+              <Plus className="size-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+        {daily ? null : (
         <div className="flex items-center gap-2">
           <label htmlFor="task-due" className="sr-only">
             Due date
@@ -156,6 +209,7 @@ export function TaskList({ tasks, today, cycleDay, onToggle, onAdd, onRemove, sp
             <Plus className="size-4" aria-hidden />
           </button>
         </div>
+        )}
       </form>
     </section>
   )
