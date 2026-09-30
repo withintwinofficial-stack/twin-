@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
 import {
   actualCycleDay,
   addDays,
@@ -192,7 +193,15 @@ export function Dashboard({
         {!evening ? <QuoteCard today={today} /> : null}
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <section aria-label="Your Twin" className="flex min-w-0 flex-col gap-6 lg:col-span-4">
+          <section
+            aria-label="Your Twin"
+            className={cn(
+              "min-w-0 lg:col-span-4",
+              !premium &&
+                "lg:sticky lg:top-20 lg:-m-2 lg:max-h-[calc(100dvh-5.5rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-width:thin]",
+            )}
+          >
+            <div className={cn("flex flex-col gap-6", !premium && "lg:p-2")}>
             <TwinStage
               avatar={avatar}
               phase={phase}
@@ -219,6 +228,7 @@ export function Dashboard({
                 {taxShelf}
               </>
             ) : null}
+            </div>
           </section>
 
           <section aria-label="Planner" className="flex min-w-0 flex-col gap-6 lg:col-span-8">
