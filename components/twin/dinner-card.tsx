@@ -21,11 +21,26 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        checked ? "border-foreground bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground",
+        "group inline-flex select-none items-center gap-2.5 rounded-full border py-1.5 pl-1.5 pr-3.5 text-xs font-medium transition-all duration-200 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        checked
+          ? "border-foreground bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_2px_6px_-2px_rgb(0_0_0/0.35)]"
+          : "border-border bg-background text-muted-foreground shadow-[inset_0_-1px_0_rgb(0_0_0/0.06),0_1px_2px_rgb(0_0_0/0.05)] hover:border-foreground/40 hover:text-foreground",
       )}
     >
-      <span aria-hidden className={cn("size-1.5 rounded-full", checked ? "bg-primary-foreground" : "bg-muted-foreground/50")} />
+      <span
+        aria-hidden
+        className={cn(
+          "relative flex h-4 w-7 items-center rounded-full transition-colors duration-200",
+          checked ? "bg-primary-foreground/25" : "bg-muted",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 size-3 rounded-full shadow-sm transition-transform duration-200 ease-out",
+            checked ? "translate-x-3.5 bg-primary-foreground" : "translate-x-0.5 bg-muted-foreground/60",
+          )}
+        />
+      </span>
       {label}
     </button>
   )
@@ -51,11 +66,18 @@ export function DinnerCard({ cycleDay }: { cycleDay: number }) {
         <Toggle label="Gluten-free" checked={glutenFree} onChange={setGlutenFree} />
       </div>
 
-      <div aria-live="polite" aria-busy={isLoading} className={cn("mt-5 transition-opacity", isLoading && "opacity-50")}>
+      <div
+        aria-live="polite"
+        aria-busy={isLoading}
+        className={cn(
+          "mt-5 transition-[opacity,filter,transform] duration-300 ease-out motion-reduce:transition-none",
+          isLoading && data && "translate-y-0.5 opacity-40 blur-[1px]",
+        )}
+      >
         {error ? (
           <p className="text-sm text-muted-foreground">Twin&apos;s kitchen is closed right now. Toast counts as dinner.</p>
         ) : recipe ? (
-          <div key={recipe.id} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
+          <div key={recipe.id} className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out motion-reduce:animate-none">
             <h2 id="dinner-heading" className="font-serif text-2xl leading-tight text-balance">
               {recipe.title}
             </h2>

@@ -78,8 +78,15 @@ export function AppShell({ todayISO }: { todayISO: string }) {
   const [alignKey, setAlignKey] = useState(0)
 
   // Applied to <html> so portalled dialogs, drawers and popovers inherit the theme too.
+  // Read the local clock only after mount so server and client render the same initial markup.
   useEffect(() => {
-    const root = document.documentElement
+    const hour = new Date().getHours()
+    if (hour < 9) setTimeMode("morning")
+    else if (hour >= 21) setTimeMode("evening")
+  }, [])
+
+  useEffect(() => {
+  const root = document.documentElement
     root.dataset.theme = theme
     root.classList.toggle("dark", theme === "cyber")
   }, [theme])

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Lock } from "lucide-react"
+import { Crown, Glasses, Lock, Ribbon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ACCESSORIES, accessoryName, drawAccessory, DUPLICATE_REFUND, SCRATCH_COST, type AccessoryId } from "@/lib/pillars"
 import { AccessoryPreview } from "./twin-avatar"
@@ -27,6 +27,12 @@ interface ActiveCard {
 }
 
 type Tab = "vault" | "collection"
+
+const UPCOMING_SLOTS = [
+  { name: "Glossy Sunglasses", tag: "Eyewear", Icon: Glasses },
+  { name: "Y2K Pink Bow", tag: "Hair", Icon: Ribbon },
+  { name: "Floating Mini Crown", tag: "Halo", Icon: Crown },
+]
 
 export function DopamineVault({ tokens, owned, equipped, premium, onLocked, onSpend, onEarn, onCollect, onEquip }: DopamineVaultProps) {
   const [tab, setTab] = useState<Tab>("vault")
@@ -200,6 +206,29 @@ export function DopamineVault({ tokens, owned, equipped, premium, onLocked, onSp
               )
             })}
           </ul>
+
+          <div className="mt-6 border-t border-border pt-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Coming to the vault</h3>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Rare drops</span>
+            </div>
+            <ul className="mt-3 grid grid-cols-3 gap-2.5" aria-label="Upcoming rare accessories">
+              {UPCOMING_SLOTS.map(({ name, tag, Icon }) => (
+                <li
+                  key={name}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-background/60 px-2 py-3 text-center"
+                >
+                  <span className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground">
+                    <Icon className="size-4" aria-hidden />
+                  </span>
+                  <span className="text-xs leading-tight text-pretty">{name}</span>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-secondary-foreground">
+                    {tag}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </section>
